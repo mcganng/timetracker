@@ -74,6 +74,21 @@
                         <label for="regPasswordConfirm" class="form-label">Confirm Password</label>
                         <input type="password" class="form-control" id="regPasswordConfirm" required>
                     </div>
+
+                    <hr class="my-3">
+                    <p class="text-muted small mb-2"><i class="bi bi-info-circle"></i> Optional Employment Information</p>
+
+                    <div class="mb-3">
+                        <label for="regHireDate" class="form-label">Date of Hire <span class="text-muted">(Optional)</span></label>
+                        <input type="date" class="form-control" id="regHireDate">
+                        <small class="text-muted">Your employment start date</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="regPtoTime" class="form-label">Total Allowed PTO <span class="text-muted">(Optional)</span></label>
+                        <input type="number" class="form-control" id="regPtoTime" step="0.25" min="0" placeholder="0">
+                        <small class="text-muted">Annual PTO balance in hours</small>
+                    </div>
+
                     <div class="d-grid">
                         <button type="submit" class="btn btn-success">
                             <i class="bi bi-person-plus"></i> Register
@@ -109,26 +124,41 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
 // Register
 document.getElementById('registerForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const password = document.getElementById('regPassword').value;
     const confirm = document.getElementById('regPasswordConfirm').value;
-    
+
     if (password !== confirm) {
         alert('Passwords do not match');
         return;
     }
-    
+
+    // Collect optional employment information
+    const hireDate = document.getElementById('regHireDate').value || null;
+    const ptoTime = document.getElementById('regPtoTime').value || null;
+
+    // Build request payload
+    const payload = {
+        full_name: document.getElementById('regFullName').value,
+        username: document.getElementById('regUsername').value,
+        email: document.getElementById('regEmail').value,
+        password: password
+    };
+
+    // Add optional fields if provided
+    if (hireDate) {
+        payload.hire_date = hireDate;
+    }
+    if (ptoTime) {
+        payload.pto_time = parseFloat(ptoTime);
+    }
+
     const response = await fetch('/register', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-            full_name: document.getElementById('regFullName').value,
-            username: document.getElementById('regUsername').value,
-            email: document.getElementById('regEmail').value,
-            password: password
-        })
+        body: JSON.stringify(payload)
     });
-    
+
     if (response.ok) {
         alert('Account created successfully! Please login.');
         bootstrap.Modal.getInstance(document.getElementById('registerModal')).hide();
