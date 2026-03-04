@@ -226,7 +226,9 @@ CREATE TABLE public.users (
     created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
     last_login timestamp without time zone,
     role character varying(20) DEFAULT 'user'::character varying,
-    is_active boolean DEFAULT true NOT NULL
+    is_active boolean DEFAULT true NOT NULL,
+    hire_date date,
+    pto_time numeric(10,2) DEFAULT 0
 );
 
 
