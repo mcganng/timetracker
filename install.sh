@@ -69,25 +69,61 @@ SQL
 
 # Step 5: Install application files
 echo "[5/10] Installing application files..."
-mkdir -p /opt/timetracker
-cd /opt/timetracker
+
+# Determine script directory before changing directories
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Create directory structure
-mkdir -p templates static/css static/js database
+mkdir -p /opt/timetracker/templates /opt/timetracker/static/css /opt/timetracker/static/js /opt/timetracker/database
 
-# Copy application files (assuming they're in the same directory as this script)
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-cp -r $SCRIPT_DIR/* /opt/timetracker/ 2>/dev/null || true
+# Copy essential files
+echo "   Copying application files from $SCRIPT_DIR..."
+cp "$SCRIPT_DIR/app.py" /opt/timetracker/
+cp "$SCRIPT_DIR/requirements.txt" /opt/timetracker/
 
-# Handle templates_git and database_git directories (if cloned from git repo)
+# Copy documentation files if they exist
+for doc in README.md QUICK_START.md INSTALLATION_GUIDE.md INSTALLATION_CHECKLIST.md \
+           COMPLETE_TIMETRACKER_SYSTEM_DOCUMENTATION.md BACKUP_AND_RESTORE_GUIDE.md \
+           ADMIN_COLOR_SCHEME.md FILE_STRUCTURE.txt REPOSITORY_STRUCTURE.md CLAUDE.md; do
+    [ -f "$SCRIPT_DIR/$doc" ] && cp "$SCRIPT_DIR/$doc" /opt/timetracker/
+done
+
+# Copy test files if they exist
+[ -f "$SCRIPT_DIR/test_api.py" ] && cp "$SCRIPT_DIR/test_api.py" /opt/timetracker/
+[ -f "$SCRIPT_DIR/test_ui.py" ] && cp "$SCRIPT_DIR/test_ui.py" /opt/timetracker/
+
+# Copy static files
+if [ -d "$SCRIPT_DIR/static" ]; then
+    echo "   Copying static files..."
+    cp -r "$SCRIPT_DIR/static"/* /opt/timetracker/static/ 2>/dev/null || true
+fi
+
+# Handle templates_git and database_git directories (from Git repository)
 if [ -d "$SCRIPT_DIR/templates_git" ]; then
     echo "   Copying templates from templates_git..."
-    cp -r $SCRIPT_DIR/templates_git/* /opt/timetracker/templates/
+    cp "$SCRIPT_DIR/templates_git"/* /opt/timetracker/templates/
 fi
 if [ -d "$SCRIPT_DIR/database_git" ]; then
     echo "   Copying database schema from database_git..."
-    cp -r $SCRIPT_DIR/database_git/* /opt/timetracker/database/
+    cp "$SCRIPT_DIR/database_git"/* /opt/timetracker/database/
 fi
+
+# Verify critical files exist
+if [ ! -f "/opt/timetracker/app.py" ]; then
+    echo "ERROR: app.py not found after copy. Installation cannot continue."
+    exit 1
+fi
+if [ ! -f "/opt/timetracker/requirements.txt" ]; then
+    echo "ERROR: requirements.txt not found after copy. Installation cannot continue."
+    exit 1
+fi
+if [ ! -f "/opt/timetracker/database/schema.sql" ]; then
+    echo "ERROR: database/schema.sql not found after copy. Installation cannot continue."
+    exit 1
+fi
+
+# Change to application directory
+cd /opt/timetracker
 
 # Set ownership
 chown -R timetracker:timetracker /opt/timetracker
