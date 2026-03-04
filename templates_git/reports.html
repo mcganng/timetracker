@@ -543,15 +543,18 @@ async function fetchTaskCodeStats() {
         if (data.task_codes.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No task code data for this period.</td></tr>';
         } else {
-            tbody.innerHTML = data.task_codes.map(tc => `
-                <tr>
-                    <td><strong>${tc.task_code}</strong></td>
-                    <td>${tc.description || '<i class="text-muted">No description</i>'}</td>
-                    <td class="text-end">${tc.total_hours.toFixed(2)}</td>
-                    <td class="text-end">${tc.entry_count}</td>
-                    <td class="text-end">${tc.avg_hours_per_entry.toFixed(2)}</td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = data.task_codes.map(tc => {
+                const avgHours = tc.entry_count > 0 ? (tc.hours / tc.entry_count) : 0;
+                return `
+                    <tr>
+                        <td><strong>${tc.task_code}</strong></td>
+                        <td>${tc.task_name || '<i class="text-muted">No description</i>'}</td>
+                        <td class="text-end">${tc.hours.toFixed(2)}</td>
+                        <td class="text-end">${tc.entry_count}</td>
+                        <td class="text-end">${avgHours.toFixed(2)}</td>
+                    </tr>
+                `;
+            }).join('');
         }
     } catch (error) {
         console.error('Error loading task code stats:', error);
