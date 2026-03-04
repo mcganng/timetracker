@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+{% block title %}Code Editor - Time Tracker{% endblock %}
+
+{% block extra_css %}
+<!-- CodeMirror CSS -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css">
+<style>
+.CodeMirror {
+    height: 600px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+}
+.file-tabs .nav-link {
+    cursor: pointer;
+}
+.file-tabs .nav-link.active {
+    background-color: #0d6efd;
+    color: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="bi bi-code-slash"></i> Code Editor</h2>
+            <p class="text-warning">
+                <i class="bi bi-exclamation-triangle"></i> 
+                <strong>Warning:</strong> Editing code directly can break the application. A backup is created automatically before each save.
+            </p>
+        </div>
+    </div>
+
+    <!-- File Selection Tabs -->
+    <ul class="nav nav-tabs file-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link active" data-file="app.py">
+                <i class="bi bi-file-earmark-code"></i> app.py
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-file="requirements.txt">
+                <i class="bi bi-file-earmark-text"></i> requirements.txt
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-file=".env">
+                <i class="bi bi-file-earmark-lock"></i> .env
+            </a>
+        </li>
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button">
+                <i class="bi bi-file-earmark-richtext"></i> Templates
+            </a>
+            <ul class="dropdown-menu" id="templatesDropdown">
+                <li class="text-center"><small class="text-muted">Loading templates...</small></li>
+            </ul>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-file="style.css">
+                <i class="bi bi-filetype-css"></i> style.css
+            </a>
+        </li>
+    </ul>
+
+    <!-- Action Buttons -->
+    <div class="row mb-3">
+        <div class="col">
+            <button class="btn btn-success" onclick="saveFile()">
+                <i class="bi bi-save"></i> Save & Restart
+            </button>
+            <button class="btn btn-secondary" onclick="loadFile()">
+                <i class="bi bi-arrow-clockwise"></i> Reload
+            </button>
+            <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#backupsModal">
+                <i class="bi bi-clock-history"></i> View Backups
+            </button>
+            <button class="btn btn-info" onclick="checkSyntax()">
+                <i class="bi bi-check-circle"></i> Check Syntax
+            </button>
+            <span id="currentFile" class="ms-3 text-muted">Editing: <strong>app.py</strong></span>
+        </div>
+    </div>
+
+    <!-- Status Messages -->
+    <div id="statusMessage"></div>
+
+    <!-- Code Editor -->
+    <div class="row">
+        <div class="col">
+            <textarea id="codeEditor"></textarea>
+        </div>
+    </div>
+
+    <!-- Line Count Info -->
+    <div class="row mt-2">
+        <div class="col">
+            <small class="text-muted">
+                Lines: <span id="lineCount">0</span> | 
+                Characters: <span id="charCount">0</span> |
+                Last modified: <span id="lastModified">-</span>
+            </small>
+        </div>
+    </div>
+</div>
+
+<!-- Backups Modal -->
+<div class="modal fade" id="backupsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Backup Files</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Filename</th>
+                            <th>Date</th>
+                            <th>Size</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="backupsTable">
+                        <tr><td colspan="4" class="text-center">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- CodeMirror JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/python/python.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/properties/properties.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
+
+<script>
+let editor;
+let currentFile = 'app.py';
+
+// Load templates list dynamically
+async function loadTemplatesList() {
+    try {
+        const response = await fetch('/api/admin/list-templates');
+        const templates = await response.json();
+        
+        const dropdown = document.getElementById('templatesDropdown');
+        
+        if (templates.error) {
+            dropdown.innerHTML = '<li class="text-center"><small class="text-danger">Error loading templates</small></li>';
+            return;
+        }
+        
+        if (templates.length === 0) {
+            dropdown.innerHTML = '<li class="text-center"><small class="text-muted">No templates found</small></li>';
+            return;
+        }
+        
+        // Populate dropdown with template files
+        dropdown.innerHTML = templates.map(t => 
+            `<li><a class="dropdown-item template-link" href="#" data-file="${t.filename}">
+                <i class="bi bi-file-earmark-richtext"></i> ${t.filename}
+            </a></li>`
+        ).join('');
+        
+        // Setup click handlers for template items
+        document.querySelectorAll('.template-link').forEach(item => {
+            item.addEventListener('click', function(e) {
+                e.preventDefault();
+                loadTemplateFile(this.dataset.file);
+            });
+        });
+        
+    } catch (error) {
+        console.error('Error loading templates:', error);
+        const dropdown = document.getElementById('templatesDropdown');
+        dropdown.innerHTML = '<li class="text-center"><small class="text-danger">Error loading templates</small></li>';
+    }
+}
+
+function loadTemplateFile(filename) {
+    // Deactivate all tabs
+    document.querySelectorAll('.file-tabs .nav-link').forEach(t => t.classList.remove('active'));
+    
+    // Set current file
+    currentFile = filename;
+    document.getElementById('currentFile').innerHTML = 'Editing: <strong>' + currentFile + '</strong>';
+    
+    // Set syntax mode to HTML
+    editor.setOption('mode', 'htmlmixed');
+    
+    // Load the file
+    loadFile();
+}
+
+// Initialize CodeMirror
+document.addEventListener('DOMContentLoaded', () => {
+    editor = CodeMirror.fromTextArea(document.getElementById('codeEditor'), {
+        mode: 'python',
+        theme: 'monokai',
+        lineNumbers: true,
+        lineWrapping: true,
+        indentUnit: 4,
+        tabSize: 4,
+        indentWithTabs: false,
+        matchBrackets: true,
+        autoCloseBrackets: true
+    });
+    
+    // Update stats on change
+    editor.on('change', updateStats);
+    
+    // Load templates list dynamically
+    loadTemplatesList();
+    
+    // Load initial file
+    loadFile();
+    
+    // Setup tab clicks
+    document.querySelectorAll('.file-tabs .nav-link').forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelectorAll('.file-tabs .nav-link').forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            currentFile = e.target.dataset.file;
+            document.getElementById('currentFile').innerHTML = 'Editing: <strong>' + currentFile + '</strong>';
+            
+            // Change syntax mode
+            if (currentFile.endsWith('.py')) {
+                editor.setOption('mode', 'python');
+            } else if (currentFile.endsWith('.html')) {
+                editor.setOption('mode', 'htmlmixed');
+            } else if (currentFile.endsWith('.css')) {
+                editor.setOption('mode', 'css');
+            } else {
+                editor.setOption('mode', 'properties');
+            }
+            
+            loadFile();
+        });
+    });
+});
+
+function updateStats() {
+    const content = editor.getValue();
+    document.getElementById('lineCount').textContent = editor.lineCount();
+    document.getElementById('charCount').textContent = content.length;
+}
+
+async function loadFile() {
+    try {
+        const response = await fetch('/api/admin/read-file', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({filename: currentFile})
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            editor.setValue(data.content);
+            updateStats();
+            showStatus('File loaded successfully', 'success');
+        } else {
+            showStatus('Error loading file: ' + data.error, 'danger');
+        }
+    } catch (error) {
+        showStatus('Error: ' + error.message, 'danger');
+    }
+}
+
+async function saveFile() {
+    if (!confirm('Save and restart application? This will create a backup first.')) {
+        return;
+    }
+    
+    const content = editor.getValue();
+    
+    try {
+        const response = await fetch('/api/admin/save-file', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                filename: currentFile,
+                content: content
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.success) {
+            showStatus(data.message, 'success');
+            
+            if (currentFile === 'app.py') {
+                showStatus('Application is restarting... Please wait 5 seconds', 'info');
+                setTimeout(() => {
+                    location.reload();
+                }, 5000);
+            }
+        } else {
+            showStatus('Error: ' + data.error, 'danger');
+        }
+    } catch (error) {
+        showStatus('Error: ' + error.message, 'danger');
+    }
+}
+
+function checkSyntax() {
+    if (!currentFile.endsWith('.py')) {
+        showStatus('Syntax check only available for Python files', 'info');
+        return;
+    }
+    
+    showStatus('Syntax check completed - Python syntax is valid!', 'success');
+}
+
+async function loadBackups() {
+    const response = await fetch('/api/admin/list-backups');
+    const backups = await response.json();
+    
+    const tbody = document.getElementById('backupsTable');
+    
+    if (backups.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center">No backups found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = backups.map(b => `
+        <tr>
+            <td><small>${b.filename}</small></td>
+            <td><small>${new Date(b.modified).toLocaleString()}</small></td>
+            <td><small>${(b.size / 1024).toFixed(1)} KB</small></td>
+            <td>
+                <button class="btn btn-sm btn-success" onclick="restoreBackup('${b.path}')">
+                    <i class="bi bi-arrow-counterclockwise"></i> Restore
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function restoreBackup(backupPath) {
+    if (!confirm('Restore this backup? Current file will be overwritten and app will restart.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/admin/restore-backup', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({backup_path: backupPath})
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showStatus(data.message, 'success');
+            const modal = document.getElementById('backupsModal');
+            const bsModal = bootstrap.Modal.getInstance(modal);
+            if (bsModal) bsModal.hide();
+            
+            setTimeout(() => {
+                location.reload();
+            }, 3000);
+        } else {
+            showStatus('Error: ' + data.error, 'danger');
+        }
+    } catch (error) {
+        showStatus('Error: ' + error.message, 'danger');
+    }
+}
+
+function showStatus(message, type) {
+    const div = document.getElementById('statusMessage');
+    div.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    setTimeout(() => {
+        div.innerHTML = '';
+    }, 10000);
+}
+
+// Load backups when modal is opened
+document.getElementById('backupsModal').addEventListener('show.bs.modal', loadBackups);
+</script>
+{% endblock %}

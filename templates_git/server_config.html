@@ -1,0 +1,456 @@
+{% extends "base.html" %}
+{% block title %}Server Configuration - Time Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2><i class="bi bi-gear-fill"></i> Server Configuration</h2>
+    <p class="text-muted">Manage server settings, network configuration, and time synchronization</p>
+
+    <!-- Network Settings -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-hdd-network"></i> Network Settings</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill"></i> <strong>Warning:</strong> 
+                        Changing network settings can disconnect you from the server. Make sure you have physical access or console access if needed.
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="border-bottom pb-2">Current Network Configuration</h6>
+                            
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Network Interface:</strong></label>
+                                <div class="alert alert-secondary" id="currentInterface">Loading...</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label"><strong>IP Address:</strong></label>
+                                <div class="alert alert-info" id="currentIP">Loading...</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Subnet Mask:</strong></label>
+                                <div class="alert alert-info" id="currentSubnet">Loading...</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label"><strong>Default Gateway:</strong></label>
+                                <div class="alert alert-info" id="currentGateway">Loading...</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label"><strong>DNS Servers:</strong></label>
+                                <div class="alert alert-info" id="currentDNS">Loading...</div>
+                            </div>
+
+                            <button class="btn btn-secondary" onclick="loadNetworkSettings()">
+                                <i class="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h6 class="border-bottom pb-2">Modify Network Configuration</h6>
+
+                            <div class="mb-3">
+                                <label for="newIP" class="form-label">IP Address <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="newIP" placeholder="192.168.1.100">
+                                <small class="text-muted">IPv4 address in dotted decimal format</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="newSubnet" class="form-label">Subnet Mask <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="newSubnet" placeholder="255.255.255.0">
+                                <small class="text-muted">Or use CIDR notation (e.g., 24)</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="newGateway" class="form-label">Default Gateway <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="newGateway" placeholder="192.168.1.1">
+                                <small class="text-muted">Router IP address</small>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="newDNS1" class="form-label">Primary DNS Server <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="newDNS1" placeholder="8.8.8.8">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="newDNS2" class="form-label">Secondary DNS Server (Optional)</label>
+                                <input type="text" class="form-control" id="newDNS2" placeholder="8.8.4.4">
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary" onclick="applyNetworkSettings()">
+                                    <i class="bi bi-check-circle"></i> Apply Network Settings
+                                </button>
+                                <button class="btn btn-outline-secondary" onclick="fillCurrentSettings()">
+                                    <i class="bi bi-arrow-repeat"></i> Fill Current Settings
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Time & Timezone Settings -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Time & Timezone</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Current Server Time:</strong></label>
+                        <div class="alert alert-info" id="currentTime">Loading...</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Current Timezone:</strong></label>
+                        <div class="alert alert-secondary" id="currentTimezone">Loading...</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="timezoneSelect" class="form-label">Change Timezone:</label>
+                        <select class="form-select" id="timezoneSelect">
+                            <option value="">Select a timezone...</option>
+                            <option value="America/New_York">America/New_York (EST/EDT)</option>
+                            <option value="America/Chicago">America/Chicago (CST/CDT)</option>
+                            <option value="America/Denver">America/Denver (MST/MDT)</option>
+                            <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT)</option>
+                            <option value="America/Phoenix">America/Phoenix (MST - no DST)</option>
+                            <option value="UTC">UTC</option>
+                            <option value="Europe/London">Europe/London</option>
+                            <option value="Europe/Paris">Europe/Paris</option>
+                            <option value="Asia/Tokyo">Asia/Tokyo</option>
+                            <option value="Australia/Sydney">Australia/Sydney</option>
+                        </select>
+                        <small class="text-muted">Common US timezones shown. Contact admin for others.</small>
+                    </div>
+
+                    <button class="btn btn-primary mb-3" onclick="setTimezone()">
+                        <i class="bi bi-check-circle"></i> Set Timezone
+                    </button>
+
+                    <hr>
+
+                    <div class="mb-3">
+                        <label class="form-label"><strong>NTP Sync Status:</strong></label>
+                        <div id="ntpStatus" class="alert alert-secondary">Loading...</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Current NTP Servers:</strong></label>
+                        <div id="currentNTPServers" class="alert alert-info">Loading...</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="ntpServer1" class="form-label">Primary NTP Server:</label>
+                        <input type="text" class="form-control" id="ntpServer1" placeholder="time.nist.gov or 129.6.15.28">
+                        <small class="text-muted">Enter IP address or FQDN</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="ntpServer2" class="form-label">Secondary NTP Server (Optional):</label>
+                        <input type="text" class="form-control" id="ntpServer2" placeholder="pool.ntp.org or 132.163.96.1">
+                        <small class="text-muted">Enter IP address or FQDN</small>
+                    </div>
+
+                    <button class="btn btn-success" onclick="setNTPServers()">
+                        <i class="bi bi-check-circle"></i> Set NTP Servers
+                    </button>
+                    <small class="d-block mt-2 text-muted">
+                        Syncs server time with specified NTP servers automatically
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Server Information -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-info-circle"></i> Server Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Uptime:</strong></label>
+                        <div id="uptime" class="text-muted">Loading...</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Disk Usage:</strong></label>
+                        <pre id="diskInfo" class="bg-light p-2 small">Loading...</pre>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Memory Usage:</strong></label>
+                        <pre id="memoryInfo" class="bg-light p-2 small">Loading...</pre>
+                    </div>
+
+                    <button class="btn btn-secondary" onclick="loadServerInfo()">
+                        <i class="bi bi-arrow-clockwise"></i> Refresh Info
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Messages -->
+    <div id="statusMessage"></div>
+</div>
+
+<script>
+// Store current network settings for auto-fill
+let currentNetworkConfig = {};
+
+// Load settings on page load
+document.addEventListener('DOMContentLoaded', () => {
+    loadNetworkSettings();
+    loadTimeSettings();
+    loadServerInfo();
+    
+    // Auto-refresh time every 5 seconds
+    setInterval(loadTimeSettings, 5000);
+});
+
+async function loadNetworkSettings() {
+    try {
+        const response = await fetch('/api/admin/get-network-config');
+        const data = await response.json();
+        
+        if (data.error) {
+            showStatus('Error loading network settings: ' + data.error, 'danger');
+            return;
+        }
+        
+        // Store for auto-fill
+        currentNetworkConfig = data;
+        
+        // Display current settings
+        document.getElementById('currentInterface').textContent = data.interface || 'Unknown';
+        document.getElementById('currentIP').textContent = data.ip_address || 'Unknown';
+        document.getElementById('currentSubnet').textContent = data.subnet_mask || 'Unknown';
+        document.getElementById('currentGateway').textContent = data.gateway || 'Unknown';
+        document.getElementById('currentDNS').textContent = data.dns_servers || 'Unknown';
+    } catch (error) {
+        console.error('Error loading network settings:', error);
+        showStatus('Error loading network settings: ' + error.message, 'danger');
+    }
+}
+
+function fillCurrentSettings() {
+    if (!currentNetworkConfig.ip_address) {
+        showStatus('Please load current settings first', 'warning');
+        return;
+    }
+    
+    document.getElementById('newIP').value = currentNetworkConfig.ip_address || '';
+    document.getElementById('newSubnet').value = currentNetworkConfig.subnet_mask || '';
+    document.getElementById('newGateway').value = currentNetworkConfig.gateway || '';
+    
+    // Parse DNS servers (comma-separated)
+    const dns = (currentNetworkConfig.dns_servers || '').split(',').map(s => s.trim());
+    document.getElementById('newDNS1').value = dns[0] || '';
+    document.getElementById('newDNS2').value = dns[1] || '';
+    
+    showStatus('Current settings filled into form', 'info');
+}
+
+async function applyNetworkSettings() {
+    const ip = document.getElementById('newIP').value.trim();
+    const subnet = document.getElementById('newSubnet').value.trim();
+    const gateway = document.getElementById('newGateway').value.trim();
+    const dns1 = document.getElementById('newDNS1').value.trim();
+    const dns2 = document.getElementById('newDNS2').value.trim();
+    
+    // Validation
+    if (!ip || !subnet || !gateway || !dns1) {
+        showStatus('Please fill in all required fields (marked with *)', 'warning');
+        return;
+    }
+    
+    // Confirm before applying
+    const confirmMsg = `Apply the following network settings?\n\n` +
+                      `IP Address: ${ip}\n` +
+                      `Subnet Mask: ${subnet}\n` +
+                      `Gateway: ${gateway}\n` +
+                      `Primary DNS: ${dns1}\n` +
+                      `Secondary DNS: ${dns2 || 'None'}\n\n` +
+                      `WARNING: This may disconnect your current session!`;
+    
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/admin/set-network-config', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                ip_address: ip,
+                subnet_mask: subnet,
+                gateway: gateway,
+                dns1: dns1,
+                dns2: dns2
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showStatus(data.message + ' - Network will restart in a few seconds...', 'success');
+            
+            // Wait a bit then reload network settings
+            setTimeout(() => {
+                showStatus('Reloading network settings...', 'info');
+                loadNetworkSettings();
+            }, 5000);
+        } else {
+            showStatus('Error: ' + data.error, 'danger');
+        }
+    } catch (error) {
+        showStatus('Error applying network settings: ' + error.message, 'danger');
+    }
+}
+
+async function loadTimeSettings() {
+    try {
+        const response = await fetch('/api/admin/get-timezone');
+        const data = await response.json();
+        
+        document.getElementById('currentTime').textContent = data.current_time || 'Unknown';
+        document.getElementById('currentTimezone').textContent = data.current_timezone || 'Unknown';
+        
+        if (data.ntp_enabled) {
+            document.getElementById('ntpStatus').innerHTML = '<span class="text-success"><i class="bi bi-check-circle-fill"></i> Enabled</span>';
+            document.getElementById('ntpStatus').classList.remove('alert-secondary', 'alert-warning');
+            document.getElementById('ntpStatus').classList.add('alert-success');
+        } else {
+            document.getElementById('ntpStatus').innerHTML = '<span class="text-warning"><i class="bi bi-exclamation-triangle-fill"></i> Disabled</span>';
+            document.getElementById('ntpStatus').classList.remove('alert-success', 'alert-secondary');
+            document.getElementById('ntpStatus').classList.add('alert-warning');
+        }
+        
+        // Display NTP servers
+        if (data.ntp_servers) {
+            document.getElementById('currentNTPServers').textContent = data.ntp_servers;
+        } else {
+            document.getElementById('currentNTPServers').textContent = 'Default system servers';
+        }
+    } catch (error) {
+        console.error('Error loading time settings:', error);
+    }
+}
+
+async function loadServerInfo() {
+    try {
+        const response = await fetch('/api/admin/get-server-info');
+        const data = await response.json();
+        
+        document.getElementById('uptime').textContent = data.uptime || 'Unknown';
+        document.getElementById('diskInfo').textContent = data.disk_info || 'Unknown';
+        document.getElementById('memoryInfo').textContent = data.memory_info || 'Unknown';
+    } catch (error) {
+        console.error('Error loading server info:', error);
+    }
+}
+
+async function setTimezone() {
+    const timezone = document.getElementById('timezoneSelect').value;
+    
+    if (!timezone) {
+        showStatus('Please select a timezone', 'warning');
+        return;
+    }
+    
+    if (!confirm(`Set timezone to ${timezone}? This will affect all time displays.`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/admin/set-timezone', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({timezone: timezone})
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showStatus(data.message, 'success');
+            loadTimeSettings();
+        } else {
+            showStatus('Error: ' + data.error, 'danger');
+        }
+    } catch (error) {
+        showStatus('Error: ' + error.message, 'danger');
+    }
+}
+
+async function setNTPServers() {
+    const ntp1 = document.getElementById('ntpServer1').value.trim();
+    const ntp2 = document.getElementById('ntpServer2').value.trim();
+    
+    if (!ntp1) {
+        showStatus('Please enter at least a primary NTP server', 'warning');
+        return;
+    }
+    
+    const ntpServers = ntp2 ? `${ntp1}, ${ntp2}` : ntp1;
+    
+    if (!confirm(`Set NTP servers to:\n${ntpServers}\n\nThis will enable NTP synchronization.`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/admin/set-ntp-servers', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                ntp_server1: ntp1,
+                ntp_server2: ntp2
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showStatus(data.message, 'success');
+            // Clear input fields
+            document.getElementById('ntpServer1').value = '';
+            document.getElementById('ntpServer2').value = '';
+            // Reload time settings
+            setTimeout(loadTimeSettings, 2000);
+        } else {
+            showStatus('Error: ' + data.error, 'danger');
+        }
+    } catch (error) {
+        showStatus('Error: ' + error.message, 'danger');
+    }
+}
+
+function showStatus(message, type) {
+    const div = document.getElementById('statusMessage');
+    div.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Auto-dismiss after 10 seconds for network changes
+    const timeout = type === 'success' ? 10000 : 5000;
+    setTimeout(() => {
+        div.innerHTML = '';
+    }, timeout);
+}
+</script>
+{% endblock %}

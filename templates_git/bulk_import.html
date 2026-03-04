@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Bulk Import - Time Tracker{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <h2><i class="bi bi-upload"></i> Bulk Import from Savant</h2>
+    <p class="text-muted">Copy your time data from Savant web page and paste it here for quick entry</p>
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-clipboard"></i> Paste Your Data</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="mondayDate" class="form-label">Monday Date (start of week)</label>
+                        <input type="date" class="form-control" id="mondayDate" required>
+                        <small class="text-muted">Select the Monday of the week you're importing</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="pasteArea" class="form-label">Paste Savant Data Here</label>
+                        <textarea class="form-control font-monospace" id="pasteArea" rows="15" placeholder="Paste your time data from Savant here...
+
+Example format:
+200004007    130 - Implementation    8    8    0    4    8    0    0
+PS-UC-2026   410 - Admin            0    1    2    1    0    0    0"></textarea>
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <button type="button" class="btn btn-success btn-lg" onclick="processImport()">
+                            <i class="bi bi-play-circle"></i> Process Import
+                        </button>
+                    </div>
+                    
+                    <div id="importResult" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="bi bi-info-circle"></i> How to Use</h6>
+                </div>
+                <div class="card-body">
+                    <ol>
+                        <li>LOG INTO SAVANT:</li>
+                        <li>Click on your TE Section</li>
+                        <li>On a row with the status of Historical click on the Pencil to the right</li>
+                        <li>Under the Type column click on the first cell in the row this could be "Job" or "Absence" and a blue highlight box will show</li>
+                        <li>Once that cell is highlighted press 'Ctrl' and 'A' to hightlight all cells</li>
+                        <li>Once all cells are highlighted press 'Crtl' and 'C' to copy</li>
+                    </ol>
+                    
+                    <hr>
+                    <ol>
+                      <li>LOG INTO TIME TRACKER:</li>
+                      <ul>A) If there is a new project:</ul>
+                      <ul><ul>Click on the Projects Tab and add all your project informaiton first</ul></ul>
+                      <p></p>
+                      <li>If existing projects or finished adding new projects:</li>
+                      <li>Click on the Bulk Import Tab</li>
+                      <li>Set your Monday Date according to the date in Savant</li>
+                      <li>Paste your information from Savant in the lower box</li>
+                      <li>Click Process Import</li>
+                    </ol>  
+                    <hr>
+                    
+                    <h6><i class="bi bi-check-circle"></i> Auto-Detection</h6>
+                    <ul class="small">
+                        <li><strong>Task 110-170:</strong> Project</li>
+                        <li><strong>Task 410, 450:</strong> Admin</li>
+                        <li><strong>Task 420:</strong> PTO</li>
+                        <li><strong>Task 440:</strong> Holiday</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set default to most recent Monday
+document.getElementById('mondayDate').valueAsDate = getMostRecentMonday();
+
+function getMostRecentMonday() {
+    const today = new Date();
+    const day = today.getDay();
+    const diff = today.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(today.setDate(diff));
+}
+
+async function processImport() {
+    const pastedText = document.getElementById('pasteArea').value.trim();
+    const mondayDate = document.getElementById('mondayDate').value;
+    const resultDiv = document.getElementById('importResult');
+    
+    if (!pastedText) {
+        resultDiv.innerHTML = '<div class="alert alert-warning">Please paste some data first!</div>';
+        return;
+    }
+    
+    if (!mondayDate) {
+        resultDiv.innerHTML = '<div class="alert alert-warning">Please select the Monday date!</div>';
+        return;
+    }
+    
+    resultDiv.innerHTML = '<div class="alert alert-info"><i class="bi bi-hourglass-split"></i> Processing...</div>';
+    
+    try {
+        const response = await fetch('/api/bulk-import/process', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                pasted_text: pastedText,
+                monday_date: mondayDate
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            resultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <h5><i class="bi bi-check-circle"></i> Success!</h5>
+                    <p class="mb-0">${data.message}</p>
+                    <p class="mb-0"><strong>${data.entries_imported} entries</strong> imported</p>
+                    <a href="/dashboard" class="btn btn-sm btn-success mt-2">
+                        <i class="bi bi-speedometer2"></i> View Dashboard
+                    </a>
+                </div>
+            `;
+            
+            // Clear text area
+            document.getElementById('pasteArea').value = '';
+        } else {
+            resultDiv.innerHTML = `
+                <div class="alert alert-danger">
+                    <h5><i class="bi bi-exclamation-triangle"></i> Error</h5>
+                    <p class="mb-0">${data.error || 'Import failed'}</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        resultDiv.innerHTML = `
+            <div class="alert alert-danger">
+                <h5><i class="bi bi-exclamation-triangle"></i> Error</h5>
+                <p class="mb-0">Failed to process import: ${error.message}</p>
+            </div>
+        `;
+    }
+}
+</script>
+{% endblock %}

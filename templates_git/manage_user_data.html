@@ -1,0 +1,620 @@
+{% extends "base.html" %}
+{% block title %}Manage User Data - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2><i class="bi bi-person-gear"></i> Manage User Data</h2>
+    <p class="text-muted">View and manage other users' projects and time entries</p>
+
+    <!-- User Selection -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-person-circle"></i> Select User</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <label for="userSelect" class="form-label">User:</label>
+                    <select class="form-select" id="userSelect" onchange="loadUserData()">
+                        <option value="">-- Select a user --</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Date Range:</label>
+                    <div class="d-flex gap-2">
+                        <input type="date" class="form-control" id="startDate">
+                        <input type="date" class="form-control" id="endDate">
+                        <button class="btn btn-primary" onclick="loadUserData()">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User's Projects -->
+    <div class="card mb-4" id="projectsSection" style="display: none;">
+        <div class="card-header bg-success text-white">
+            <h5 class="mb-0"><i class="bi bi-folder"></i> User's Projects</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Job Number</th>
+                            <th>Customer</th>
+                            <th>Description</th>
+                            <th class="text-end">Budget Hrs</th>
+                            <th class="text-end">Used Hrs</th>
+                            <th class="text-end">Remaining</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userProjectsBody">
+                        <tr><td colspan="8" class="text-center">Select a user to view their projects</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- User's Time Entries -->
+    <div class="card mb-4" id="timeEntriesSection" style="display: none;">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-clock"></i> User's Time Entries</h5>
+            <button class="btn btn-light btn-sm" onclick="openAddTimeEntryModal()">
+                <i class="bi bi-plus-circle"></i> Add Time Entry
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover table-sm">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Job Number</th>
+                            <th>Customer</th>
+                            <th>Task</th>
+                            <th>Category</th>
+                            <th class="text-end">Hours</th>
+                            <th>Description</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userTimeEntriesBody">
+                        <tr><td colspan="8" class="text-center">Select a user and date range to view their time entries</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Messages -->
+    <div id="statusMessage"></div>
+</div>
+
+<!-- Add Time Entry Modal -->
+<div class="modal fade" id="addTimeEntryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Time Entry for <span id="addTimeEntryUsername"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="addUserId">
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="addDate" class="form-label">Date <span class="text-danger">*</span></label>
+                        <input type="date" class="form-control" id="addDate" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="addHours" class="form-label">Hours <span class="text-danger">*</span></label>
+                        <input type="number" step="0.25" min="0" class="form-control" id="addHours" required>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="addJobNumber" class="form-label">Job Number</label>
+                    <input type="text" class="form-control" id="addJobNumber" placeholder="Leave blank for non-project work">
+                    <small class="text-muted">Required for Project category</small>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="addCategory" class="form-label">Category <span class="text-danger">*</span></label>
+                        <select class="form-select" id="addCategory" required>
+                            <option value="Project">Project</option>
+                            <option value="Admin">Admin</option>
+                            <option value="PTO">PTO</option>
+                            <option value="Holiday">Holiday</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="addTaskCode" class="form-label">Task Code</label>
+                        <input type="text" class="form-control" id="addTaskCode" placeholder="Optional">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="addDescription" class="form-label">Description</label>
+                    <textarea class="form-control" id="addDescription" rows="3" placeholder="Description of work performed"></textarea>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> <strong>Note:</strong> This time entry will be added to the selected user's timesheet.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="saveNewTimeEntry()">
+                    <i class="bi bi-plus-circle"></i> Add Time Entry
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Time Entry Modal -->
+<div class="modal fade" id="editTimeEntryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Time Entry</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editEntryId">
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="editDate" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="editDate">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="editHours" class="form-label">Hours</label>
+                        <input type="number" step="0.25" class="form-control" id="editHours">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="editJobNumber" class="form-label">Job Number</label>
+                    <input type="text" class="form-control" id="editJobNumber">
+                </div>
+
+                <div class="mb-3">
+                    <label for="editCategory" class="form-label">Category</label>
+                    <select class="form-select" id="editCategory">
+                        <option value="Project">Project</option>
+                        <option value="Admin">Admin</option>
+                        <option value="PTO">PTO</option>
+                        <option value="Holiday">Holiday</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label for="editDescription" class="form-label">Description</label>
+                    <textarea class="form-control" id="editDescription" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveTimeEntry()">
+                    <i class="bi bi-save"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Project Modal -->
+<div class="modal fade" id="editProjectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Project</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editProjectId">
+                
+                <div class="mb-3">
+                    <label for="editProjectJobNumber" class="form-label">Job Number</label>
+                    <input type="text" class="form-control" id="editProjectJobNumber">
+                </div>
+
+                <div class="mb-3">
+                    <label for="editProjectCustomer" class="form-label">Customer</label>
+                    <input type="text" class="form-control" id="editProjectCustomer">
+                </div>
+
+                <div class="mb-3">
+                    <label for="editProjectDescription" class="form-label">Description</label>
+                    <textarea class="form-control" id="editProjectDescription" rows="2"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label for="editProjectBudget" class="form-label">Budget Hours</label>
+                    <input type="number" step="0.5" class="form-control" id="editProjectBudget">
+                </div>
+
+                <div class="mb-3">
+                    <label for="editProjectStatus" class="form-label">Status</label>
+                    <select class="form-select" id="editProjectStatus">
+                        <option value="Active">Active</option>
+                        <option value="Completed">Completed</option>
+                        <option value="On Hold">On Hold</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveProject()">
+                    <i class="bi bi-save"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    loadUsers();
+    
+    // Set default date range to current month
+    const today = new Date();
+    const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+    document.getElementById('startDate').value = firstDay.toISOString().split('T')[0];
+    document.getElementById('endDate').value = today.toISOString().split('T')[0];
+});
+
+async function loadUsers() {
+    try {
+        const response = await fetch('/api/admin/get-users');
+        const data = await response.json();
+        
+        if (data.error) {
+            showStatus('Error loading users: ' + data.error, 'danger');
+            return;
+        }
+        
+        const select = document.getElementById('userSelect');
+        select.innerHTML = '<option value="">-- Select a user --</option>' +
+            data.users.map(user => `
+                <option value="${user.id}">${user.username} - ${user.full_name || 'No name'}</option>
+            `).join('');
+    } catch (error) {
+        showStatus('Error loading users: ' + error.message, 'danger');
+    }
+}
+
+async function loadUserData() {
+    const userId = document.getElementById('userSelect').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    if (!userId) {
+        document.getElementById('projectsSection').style.display = 'none';
+        document.getElementById('timeEntriesSection').style.display = 'none';
+        return;
+    }
+    
+    if (!startDate || !endDate) {
+        showStatus('Please select a date range', 'warning');
+        return;
+    }
+    
+    // Load projects
+    await loadUserProjects(userId);
+    
+    // Load time entries
+    await loadUserTimeEntries(userId, startDate, endDate);
+}
+
+async function loadUserProjects(userId) {
+    try {
+        const response = await fetch(`/api/admin/user-projects/${userId}`);
+        const projects = await response.json();
+        
+        const tbody = document.getElementById('userProjectsBody');
+        
+        if (!projects || projects.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No projects found for this user</td></tr>';
+        } else {
+            tbody.innerHTML = projects.map(p => `
+                <tr>
+                    <td><strong>${p.job_number || ''}</strong></td>
+                    <td>${p.customer_name || ''}</td>
+                    <td>${p.project_description || ''}</td>
+                    <td class="text-end">${parseFloat(p.budget_hours || 0).toFixed(1)}</td>
+                    <td class="text-end">${parseFloat(p.hours_used || 0).toFixed(1)}</td>
+                    <td class="text-end">${parseFloat(p.hours_remaining || 0).toFixed(1)}</td>
+                    <td><span class="badge bg-${p.status === 'Active' ? 'success' : 'secondary'}">${p.status}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick='editProject(${JSON.stringify(p)})'>
+                            <i class="bi bi-pencil"></i> Edit
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteProject(${p.id}, '${p.job_number}')">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        document.getElementById('projectsSection').style.display = 'block';
+    } catch (error) {
+        showStatus('Error loading user projects: ' + error.message, 'danger');
+    }
+}
+
+async function loadUserTimeEntries(userId, startDate, endDate) {
+    try {
+        const response = await fetch(`/api/admin/user-time-entries/${userId}?start_date=${startDate}&end_date=${endDate}`);
+        const entries = await response.json();
+        
+        const tbody = document.getElementById('userTimeEntriesBody');
+        
+        if (!entries || entries.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No time entries found for this period</td></tr>';
+        } else {
+            tbody.innerHTML = entries.map(e => `
+                <tr>
+                    <td>${e.entry_date || ''}</td>
+                    <td>${e.job_number || ''}</td>
+                    <td>${e.customer_name || 'N/A'}</td>
+                    <td>${e.job_task_code || ''}</td>
+                    <td><span class="badge bg-${getCategoryColor(e.category)}">${e.category || ''}</span></td>
+                    <td class="text-end"><strong>${parseFloat(e.hours || 0).toFixed(2)}</strong></td>
+                    <td>${e.description || ''}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick='editTimeEntry(${JSON.stringify(e)})'>
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteTimeEntry(${e.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        document.getElementById('timeEntriesSection').style.display = 'block';
+    } catch (error) {
+        showStatus('Error loading user time entries: ' + error.message, 'danger');
+    }
+}
+
+function getCategoryColor(category) {
+    const colors = {
+        'Project': 'primary',
+        'Admin': 'secondary',
+        'PTO': 'warning',
+        'Holiday': 'danger'
+    };
+    return colors[category] || 'secondary';
+}
+
+function editTimeEntry(entry) {
+    document.getElementById('editEntryId').value = entry.id;
+    document.getElementById('editDate').value = entry.entry_date;
+    document.getElementById('editHours').value = entry.hours;
+    document.getElementById('editJobNumber').value = entry.job_number || '';
+    document.getElementById('editCategory').value = entry.category;
+    document.getElementById('editDescription').value = entry.description || '';
+    
+    new bootstrap.Modal(document.getElementById('editTimeEntryModal')).show();
+}
+
+async function saveTimeEntry() {
+    const id = document.getElementById('editEntryId').value;
+    const data = {
+        entry_date: document.getElementById('editDate').value,
+        hours: document.getElementById('editHours').value,
+        job_number: document.getElementById('editJobNumber').value,
+        category: document.getElementById('editCategory').value,
+        description: document.getElementById('editDescription').value
+    };
+    
+    try {
+        const response = await fetch(`/api/admin/update-time-entry/${id}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showStatus('Time entry updated successfully', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('editTimeEntryModal')).hide();
+            loadUserData();
+        } else {
+            showStatus('Error: ' + result.error, 'danger');
+        }
+    } catch (error) {
+        showStatus('Error: ' + error.message, 'danger');
+    }
+}
+
+async function deleteTimeEntry(id) {
+    if (!confirm('Are you sure you want to delete this time entry?')) return;
+    
+    try {
+        const response = await fetch(`/api/admin/delete-time-entry/${id}`, {method: 'DELETE'});
+        const result = await response.json();
+        
+        if (result.success) {
+            showStatus('Time entry deleted successfully', 'success');
+            loadUserData();
+        } else {
+            showStatus('Error: ' + result.error, 'danger');
+        }
+    } catch (error) {
+        showStatus('Error: ' + error.message, 'danger');
+    }
+}
+
+function editProject(project) {
+    document.getElementById('editProjectId').value = project.id;
+    document.getElementById('editProjectJobNumber').value = project.job_number;
+    document.getElementById('editProjectCustomer').value = project.customer_name;
+    document.getElementById('editProjectDescription').value = project.project_description || '';
+    document.getElementById('editProjectBudget').value = project.budget_hours;
+    document.getElementById('editProjectStatus').value = project.status;
+    
+    new bootstrap.Modal(document.getElementById('editProjectModal')).show();
+}
+
+async function saveProject() {
+    const id = document.getElementById('editProjectId').value;
+    const data = {
+        job_number: document.getElementById('editProjectJobNumber').value,
+        customer_name: document.getElementById('editProjectCustomer').value,
+        project_description: document.getElementById('editProjectDescription').value,
+        budget_hours: document.getElementById('editProjectBudget').value,
+        status: document.getElementById('editProjectStatus').value
+    };
+    
+    try {
+        const response = await fetch(`/api/projects/${id}`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showStatus('Project updated successfully', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('editProjectModal')).hide();
+            loadUserData();
+        } else {
+            showStatus('Error: ' + result.error, 'danger');
+        }
+    } catch (error) {
+        showStatus('Error: ' + error.message, 'danger');
+    }
+}
+
+function openAddTimeEntryModal() {
+    const userId = document.getElementById('userSelect').value;
+    const userSelect = document.getElementById('userSelect');
+    const userName = userSelect.options[userSelect.selectedIndex].text;
+    
+    if (!userId) {
+        showStatus('Please select a user first', 'warning');
+        return;
+    }
+    
+    // Set user info
+    document.getElementById('addUserId').value = userId;
+    document.getElementById('addTimeEntryUsername').textContent = userName;
+    
+    // Set default date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('addDate').value = today;
+    
+    // Clear other fields
+    document.getElementById('addHours').value = '';
+    document.getElementById('addJobNumber').value = '';
+    document.getElementById('addCategory').value = 'Project';
+    document.getElementById('addTaskCode').value = '';
+    document.getElementById('addDescription').value = '';
+    
+    new bootstrap.Modal(document.getElementById('addTimeEntryModal')).show();
+}
+
+async function saveNewTimeEntry() {
+    const userId = document.getElementById('addUserId').value;
+    const date = document.getElementById('addDate').value;
+    const hours = document.getElementById('addHours').value;
+    const jobNumber = document.getElementById('addJobNumber').value;
+    const category = document.getElementById('addCategory').value;
+    const taskCode = document.getElementById('addTaskCode').value;
+    const description = document.getElementById('addDescription').value;
+    
+    // Validation
+    if (!date || !hours) {
+        showStatus('Please fill in date and hours', 'warning');
+        return;
+    }
+    
+    if (category === 'Project' && !jobNumber) {
+        showStatus('Job number is required for Project category', 'warning');
+        return;
+    }
+    
+    const data = {
+        user_id: userId,
+        entry_date: date,
+        hours: parseFloat(hours),
+        job_number: jobNumber || null,
+        job_task_code: taskCode || null,
+        category: category,
+        description: description || ''
+    };
+    
+    try {
+        const response = await fetch('/api/admin/add-time-entry', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showStatus('Time entry added successfully', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('addTimeEntryModal')).hide();
+            loadUserData();
+        } else {
+            showStatus('Error: ' + result.error, 'danger');
+        }
+    } catch (error) {
+        showStatus('Error: ' + error.message, 'danger');
+    }
+}
+
+async function deleteProject(projectId, jobNumber) {
+    if (!confirm(`Are you sure you want to delete project ${jobNumber}?\n\nThis will NOT delete associated time entries, but the project will be removed.`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/projects/${projectId}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showStatus('Project deleted successfully', 'success');
+            loadUserData();
+        } else {
+            showStatus('Error: ' + result.error, 'danger');
+        }
+    } catch (error) {
+        showStatus('Error: ' + error.message, 'danger');
+    }
+}
+
+function showStatus(message, type) {
+    const div = document.getElementById('statusMessage');
+    div.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    setTimeout(() => {
+        div.innerHTML = '';
+    }, 5000);
+}
+</script>
+{% endblock %}

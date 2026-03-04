@@ -1,0 +1,98 @@
+Savant Time Tracker - Web Application
+File Structure and Description
+
+Root Directory:
+├── install.sh              # Automated installation script (run this first!)
+├── README.md               # Complete documentation
+├── INSTALLATION_GUIDE.md   # Detailed manual installation steps
+├── QUICK_START.md          # 5-minute quick start guide
+├── FILE_STRUCTURE.txt      # This file
+│
+├── app.py                  # Main Flask application (API routes)
+├── requirements.txt        # Python dependencies
+│
+├── database/
+│   └── schema.sql         # PostgreSQL database schema
+│
+├── templates/             # HTML page templates
+│   ├── base.html          # Base template (navigation, layout)
+│   ├── login.html         # Login and registration page
+│   ├── dashboard.html     # Dashboard with metrics and charts
+│   ├── time_entry.html    # Time entry form and list
+│   ├── projects.html      # Project management interface
+│   └── config.html        # Configuration page
+│
+└── static/                # Static files (CSS, JS, images)
+    └── css/
+        └── style.css      # Custom styling
+
+After Installation:
+/opt/timetracker/          # Application directory
+├── venv/                  # Python virtual environment
+├── .env                   # Environment configuration (passwords, etc.)
+├── backup.sh              # Backup script
+├── backups/               # Database backups (created automatically)
+└── (all files from above)
+
+System Files Created:
+├── /etc/systemd/system/timetracker.service  # Systemd service
+├── /etc/nginx/sites-available/timetracker   # Nginx configuration
+└── /etc/nginx/sites-enabled/timetracker     # Nginx enabled site
+
+Log Files:
+├── sudo journalctl -u timetracker           # Application logs
+├── /var/log/nginx/timetracker_access.log   # Web access logs
+├── /var/log/nginx/timetracker_error.log    # Web error logs
+└── /opt/timetracker/backup.log              # Backup logs
+
+Key Features Per File:
+========================
+
+app.py:
+- User authentication (login, register, logout)
+- Dashboard metrics API
+- Time entry CRUD operations
+- Project management
+- CSV export
+- Database connections
+
+schema.sql:
+- Users table
+- Time entries table
+- Project budgets table
+- Job task codes
+- Admin codes
+- Holidays
+- Views and indexes
+
+dashboard.html:
+- Summary metrics cards
+- Date range selection
+- Project hours chart
+- Work week calculation
+- Active projects budget tracking
+- CSV export button
+
+time_entry.html:
+- Time entry form
+- Recent entries table
+- Quick filtering
+- Delete entries
+
+projects.html:
+- Active/Closed project tabs
+- Add new projects
+- Close projects
+- Budget tracking
+
+install.sh:
+- System package installation
+- Database setup
+- Application installation
+- Nginx configuration
+- Firewall setup
+- Backup automation
+
+Total Files: 15 core files + dependencies
+Total Size: ~2MB (excluding backups and logs)
+Installation Time: ~15 minutes

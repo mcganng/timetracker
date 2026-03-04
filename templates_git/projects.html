@@ -1,0 +1,655 @@
+{% extends "base.html" %}
+{% block title %}Project Budget Management - Time Tracker{% endblock %}
+
+{% block extra_css %}
+<style>
+.status-badge {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.85em;
+}
+.status-Active {
+    background-color: #198754;
+    color: white;
+}
+.status-Closed {
+    background-color: #6c757d;
+    color: white;
+}
+.status-OnHold {
+    background-color: #ffc107;
+    color: black;
+}
+.progress-bar-container {
+    background-color: #e9ecef;
+    border-radius: 4px;
+    height: 16px;
+    min-width: 80px;
+}
+.progress-bar-fill {
+    height: 16px;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+.budget-ok { background-color: #198754; }
+.budget-warn { background-color: #ffc107; }
+.budget-over { background-color: #dc3545; }
+.table-sm td {
+    padding: 0.4rem;
+    font-size: 0.9em;
+    vertical-align: middle;
+}
+.table-sm th {
+    padding: 0.5rem;
+    font-size: 0.85em;
+    background-color: #f8f9fa;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+.row-Closed td {
+    opacity: 0.65;
+}
+.btn-group-sm .btn {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.8em;
+}
+
+/* Sortable column headers */
+.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+.sortable:hover {
+    background-color: rgba(0, 0, 0, 0.08);
+}
+.sortable i {
+    opacity: 0.3;
+    font-size: 0.75em;
+    margin-left: 4px;
+}
+.sortable:hover i {
+    opacity: 0.6;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2><i class="bi bi-folder2-open"></i> Project Budget Management</h2>
+    
+    <!-- Add Project Form -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Add New Project</h5>
+                    <button class="btn btn-sm btn-light" type="button" data-bs-toggle="collapse" data-bs-target="#addProjectForm">
+                        <i class="bi bi-chevron-down"></i> Toggle Form
+                    </button>
+                </div>
+                <div class="collapse show" id="addProjectForm">
+                    <div class="card-body">
+                        <form id="projectForm">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label class="form-label">Job Number</label>
+                                    <input type="text" class="form-control" id="jobNumber" required placeholder="e.g. J00015965">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Customer Name</label>
+                                    <input type="text" class="form-control" id="customerName" required placeholder="Customer name">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Budget Hours</label>
+                                    <input type="number" step="0.5" class="form-control" id="budgetHours" required placeholder="0.0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-select" id="status">
+                                        <option value="Active">Active</option>
+                                        <option value="Closed">Closed</option>
+                                        <option value="OnHold">On Hold</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mt-3">
+                                <div class="col-md-4">
+                                    <label class="form-label">Project Description</label>
+                                    <input type="text" class="form-control" id="projectDescription" placeholder="Brief description">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">Start Date</label>
+                                    <input type="date" class="form-control" id="startDate">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">End Date</label>
+                                    <input type="date" class="form-control" id="endDate">
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-success w-100">
+                                        <i class="bi bi-plus-circle"></i> Add Project
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter / View Controls with Search -->
+    <div class="row mb-3">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-end">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted small">Filter by Status:</label>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <button class="btn btn-sm btn-success active" id="btnActive" onclick="filterProjects('Active')">
+                                    Active
+                                </button>
+                                <button class="btn btn-sm btn-secondary" id="btnClosed" onclick="filterProjects('Closed')">
+                                    Closed
+                                </button>
+                                <button class="btn btn-sm btn-warning" id="btnOnHold" onclick="filterProjects('OnHold')">
+                                    On Hold
+                                </button>
+                                <button class="btn btn-sm btn-primary" id="btnAll" onclick="filterProjects('All')">
+                                    All Projects
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Search Job Number</label>
+                            <input type="text" class="form-control" id="searchJobNumber" placeholder="Search..." onkeyup="applySearch()">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Search Customer Name</label>
+                            <input type="text" class="form-control" id="searchCustomer" placeholder="Search..." onkeyup="applySearch()">
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-muted">
+                            Showing: <strong id="projectCount">0</strong> projects
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Projects Table with Sortable Headers -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Project List</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 650px; overflow-y: auto;">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" onclick="sortProjects('job_number')">
+                                        Job Number <i class="bi bi-arrow-down-up"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortProjects('customer_name')">
+                                        Customer Name <i class="bi bi-arrow-down-up"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortProjects('project_description')">
+                                        Description <i class="bi bi-arrow-down-up"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortProjects('status')">
+                                        Status <i class="bi bi-arrow-down-up"></i>
+                                    </th>
+                                    <th class="text-end sortable" onclick="sortProjects('budget_hours')">
+                                        Budget Hrs <i class="bi bi-arrow-down-up"></i>
+                                    </th>
+                                    <th class="text-end sortable" onclick="sortProjects('hours_used')">
+                                        Used Hrs <i class="bi bi-arrow-down-up"></i>
+                                    </th>
+                                    <th class="text-end sortable" onclick="sortProjects('remaining')">
+                                        Remaining <i class="bi bi-arrow-down-up"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortProjects('percent_used')">
+                                        Budget Used <i class="bi bi-arrow-down-up"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortProjects('start_date')">
+                                        Start Date <i class="bi bi-arrow-down-up"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortProjects('end_date')">
+                                        End Date <i class="bi bi-arrow-down-up"></i>
+                                    </th>
+                                    <th class="text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="projectsTable">
+                                <tr>
+                                    <td colspan="11" class="text-center p-3">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="statusMessage" class="mt-3"></div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-pencil"></i> Edit Project</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editForm">
+                    <input type="hidden" id="editId">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Job Number</label>
+                            <input type="text" class="form-control" id="editJobNumber" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Customer Name</label>
+                            <input type="text" class="form-control" id="editCustomerName" required>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Budget Hours</label>
+                            <input type="number" step="0.5" class="form-control" id="editBudgetHours" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="editStatus">
+                                <option value="Active">Active</option>
+                                <option value="Closed">Closed</option>
+                                <option value="OnHold">On Hold</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Project Description</label>
+                            <input type="text" class="form-control" id="editProjectDescription">
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="editStartDate">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="editEndDate">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveEdit()">
+                    <i class="bi bi-save"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Delete Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="bi bi-trash"></i> Delete Project</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete project <strong id="deleteJobNumber"></strong>?</p>
+                <p class="text-danger"><i class="bi bi-exclamation-triangle"></i> This will permanently delete the project budget record. Time entries logged against this project will NOT be deleted.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete()">
+                    <i class="bi bi-trash"></i> Delete Project
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let allProjects = [];
+let displayedProjects = [];
+let currentFilter = 'Active';
+let deleteTargetId = null;
+let sortColumn = 'job_number';
+let sortDirection = 'asc';
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadProjects();
+});
+
+async function loadProjects() {
+    try {
+        // Load all statuses
+        const [activeRes, closedRes, holdRes] = await Promise.all([
+            fetch('/api/projects/with-usage?status=Active'),
+            fetch('/api/projects/with-usage?status=Closed'),
+            fetch('/api/projects/with-usage?status=OnHold')
+        ]);
+
+        const active = await activeRes.json();
+        const closed = await closedRes.json();
+        const onhold = await holdRes.json();
+
+        allProjects = [...active, ...closed, ...onhold];
+        applyFiltersAndSort();
+    } catch (error) {
+        showStatus('Error loading projects: ' + error.message, 'danger');
+    }
+}
+
+function filterProjects(filter) {
+    currentFilter = filter;
+
+    // Update button states
+    document.querySelectorAll('[id^="btn"]').forEach(b => {
+        b.classList.remove('active');
+        b.style.opacity = '0.7';
+    });
+    const activeBtn = document.getElementById('btn' + (filter === 'All' ? 'All' : filter === 'OnHold' ? 'OnHold' : filter));
+    if (activeBtn) {
+        activeBtn.classList.add('active');
+        activeBtn.style.opacity = '1';
+    }
+
+    applyFiltersAndSort();
+}
+
+function applySearch() {
+    applyFiltersAndSort();
+}
+
+function applyFiltersAndSort() {
+    // Filter by status
+    let filtered = currentFilter === 'All' ? [...allProjects] : allProjects.filter(p => p.status === currentFilter);
+    
+    // Apply search filters
+    const searchJob = document.getElementById('searchJobNumber')?.value.toLowerCase() || '';
+    const searchCustomer = document.getElementById('searchCustomer')?.value.toLowerCase() || '';
+    
+    if (searchJob) {
+        filtered = filtered.filter(p => (p.job_number || '').toLowerCase().includes(searchJob));
+    }
+    if (searchCustomer) {
+        filtered = filtered.filter(p => (p.customer_name || '').toLowerCase().includes(searchCustomer));
+    }
+    
+    // Store filtered results
+    displayedProjects = filtered;
+    
+    // Apply current sort
+    sortProjects(sortColumn, true);
+}
+
+function sortProjects(column, skipToggle = false) {
+    if (!skipToggle) {
+        if (sortColumn === column) {
+            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            sortColumn = column;
+            sortDirection = 'asc';
+        }
+    }
+    
+    displayedProjects.sort((a, b) => {
+        let aVal, bVal;
+        
+        // Handle computed values
+        if (column === 'remaining') {
+            aVal = (parseFloat(a.budget_hours) || 0) - (parseFloat(a.hours_used) || 0);
+            bVal = (parseFloat(b.budget_hours) || 0) - (parseFloat(b.hours_used) || 0);
+        } else if (column === 'percent_used') {
+            const aBudget = parseFloat(a.budget_hours) || 0;
+            const bBudget = parseFloat(b.budget_hours) || 0;
+            aVal = aBudget > 0 ? ((parseFloat(a.hours_used) || 0) / aBudget) * 100 : 0;
+            bVal = bBudget > 0 ? ((parseFloat(b.hours_used) || 0) / bBudget) * 100 : 0;
+        } else {
+            aVal = a[column];
+            bVal = b[column];
+        }
+        
+        // Handle numeric columns
+        if (['budget_hours', 'hours_used', 'remaining', 'percent_used'].includes(column)) {
+            aVal = parseFloat(aVal) || 0;
+            bVal = parseFloat(bVal) || 0;
+        } else if (typeof aVal === 'string') {
+            aVal = (aVal || '').toLowerCase();
+            bVal = (bVal || '').toLowerCase();
+        }
+        
+        if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+    });
+    
+    renderProjects();
+}
+
+function renderProjects() {
+    document.getElementById('projectCount').textContent = displayedProjects.length;
+
+    const tbody = document.getElementById('projectsTable');
+
+    if (displayedProjects.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="11" class="text-center p-4">No projects found</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = displayedProjects.map(p => {
+        const budgetHours = parseFloat(p.budget_hours) || 0;
+        const usedHours = parseFloat(p.hours_used) || 0;
+        const remaining = budgetHours - usedHours;
+        const pct = budgetHours > 0 ? Math.min((usedHours / budgetHours) * 100, 100) : 0;
+        const barClass = pct >= 100 ? 'budget-over' : pct >= 80 ? 'budget-warn' : 'budget-ok';
+        const remainingClass = remaining < 0 ? 'text-danger fw-bold' : remaining < budgetHours * 0.2 ? 'text-warning' : '';
+
+        return `
+        <tr class="row-${p.status}">
+            <td><strong>${p.job_number || ''}</strong></td>
+            <td>${p.customer_name || ''}</td>
+            <td>${p.project_description || ''}</td>
+            <td><span class="status-badge status-${p.status}">${p.status === 'OnHold' ? 'On Hold' : p.status}</span></td>
+            <td class="text-end">${budgetHours.toFixed(1)}</td>
+            <td class="text-end">${usedHours.toFixed(1)}</td>
+            <td class="text-end ${remainingClass}">${remaining.toFixed(1)}</td>
+            <td>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="progress-bar-container flex-grow-1">
+                        <div class="progress-bar-fill ${barClass}" style="width: ${pct}%"></div>
+                    </div>
+                    <small>${pct.toFixed(0)}%</small>
+                </div>
+            </td>
+            <td>${formatDate(p.start_date)}</td>
+            <td>${formatDate(p.end_date)}</td>
+            <td class="text-center">
+                <div class="btn-group btn-group-sm">
+                    <button class="btn btn-warning" onclick="editProject(${p.id})" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    ${p.status === 'Active' ? `
+                    <button class="btn btn-secondary" onclick="changeStatus(${p.id}, 'Closed')" title="Close Project">
+                        <i class="bi bi-archive"></i>
+                    </button>` : `
+                    <button class="btn btn-success" onclick="changeStatus(${p.id}, 'Active')" title="Re-activate">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </button>`}
+                    <button class="btn btn-danger" onclick="deleteProject(${p.id}, '${p.job_number}')" title="Delete">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>`;
+    }).join('');
+}
+
+// Add new project
+document.getElementById('projectForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const data = {
+        job_number: document.getElementById('jobNumber').value,
+        customer_name: document.getElementById('customerName').value,
+        budget_hours: document.getElementById('budgetHours').value,
+        status: document.getElementById('status').value,
+        project_description: document.getElementById('projectDescription').value,
+        start_date: document.getElementById('startDate').value || null,
+        end_date: document.getElementById('endDate').value || null
+    };
+
+    const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    });
+
+    if (response.ok) {
+        showStatus('Project added successfully!', 'success');
+        document.getElementById('projectForm').reset();
+        loadProjects();
+    } else {
+        const err = await response.json();
+        showStatus('Error: ' + (err.error || 'Could not add project'), 'danger');
+    }
+});
+
+// Edit project - open modal
+function editProject(id) {
+    const project = allProjects.find(p => p.id === id);
+    if (!project) return;
+
+    document.getElementById('editId').value = project.id;
+    document.getElementById('editJobNumber').value = project.job_number || '';
+    document.getElementById('editCustomerName').value = project.customer_name || '';
+    document.getElementById('editBudgetHours').value = project.budget_hours || '';
+    document.getElementById('editStatus').value = project.status || 'Active';
+    document.getElementById('editProjectDescription').value = project.project_description || '';
+    document.getElementById('editStartDate').value = project.start_date || '';
+    document.getElementById('editEndDate').value = project.end_date || '';
+
+    new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+
+// Save edits
+async function saveEdit() {
+    const id = document.getElementById('editId').value;
+
+    const data = {
+        job_number: document.getElementById('editJobNumber').value,
+        customer_name: document.getElementById('editCustomerName').value,
+        budget_hours: document.getElementById('editBudgetHours').value,
+        status: document.getElementById('editStatus').value,
+        project_description: document.getElementById('editProjectDescription').value,
+        start_date: document.getElementById('editStartDate').value || null,
+        end_date: document.getElementById('editEndDate').value || null
+    };
+
+    const response = await fetch(`/api/projects/${id}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    });
+
+    if (response.ok) {
+        showStatus('Project updated successfully!', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+        loadProjects();
+    } else {
+        showStatus('Error updating project', 'danger');
+    }
+}
+
+// Quick status change (archive/reactivate)
+async function changeStatus(id, newStatus) {
+    const project = allProjects.find(p => p.id === id);
+    if (!project) return;
+
+    const label = newStatus === 'Closed' ? 'close' : 're-activate';
+    if (!confirm(`Are you sure you want to ${label} project ${project.job_number}?`)) return;
+
+    const data = {
+        job_number: project.job_number,
+        customer_name: project.customer_name,
+        budget_hours: project.budget_hours,
+        status: newStatus,
+        project_description: project.project_description,
+        start_date: project.start_date || null,
+        end_date: project.end_date || null
+    };
+
+    const response = await fetch(`/api/projects/${id}`, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    });
+
+    if (response.ok) {
+        const msg = newStatus === 'Closed' ? 'Project closed' : 'Project re-activated';
+        showStatus(msg + ' successfully!', 'success');
+        loadProjects();
+    } else {
+        showStatus('Error updating project status', 'danger');
+    }
+}
+
+// Delete project - show confirmation modal
+function deleteProject(id, jobNumber) {
+    deleteTargetId = id;
+    document.getElementById('deleteJobNumber').textContent = jobNumber;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+async function confirmDelete() {
+    if (!deleteTargetId) return;
+
+    const response = await fetch(`/api/projects/${deleteTargetId}`, {
+        method: 'DELETE'
+    });
+
+    if (response.ok) {
+        showStatus('Project deleted successfully', 'success');
+        bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+        deleteTargetId = null;
+        loadProjects();
+    } else {
+        showStatus('Error deleting project', 'danger');
+    }
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return isNaN(d) ? '' : d.toLocaleDateString('en-US', {month: '2-digit', day: '2-digit', year: 'numeric'});
+}
+
+function showStatus(message, type) {
+    const div = document.getElementById('statusMessage');
+    div.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    setTimeout(() => { div.innerHTML = ''; }, 5000);
+}
+</script>
+{% endblock %}

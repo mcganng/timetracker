@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Login - Savant Time Tracker{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center mt-5">
+        <div class="col-md-6 col-lg-4">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <h2 class="text-center mb-4">
+                        <i class="bi bi-clock-history text-primary"></i><br>
+                        Time Tracker
+                    </h2>
+                    
+                    <!-- Login Form -->
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-box-arrow-in-right"></i> Login
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="text-center">
+                        <small class="text-muted">Don't have an account?</small><br>
+                        <button class="btn btn-link" data-bs-toggle="modal" data-bs-target="#registerModal">
+                            Create Account
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Register Modal -->
+<div class="modal fade" id="registerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Account</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="registerForm">
+                    <div class="mb-3">
+                        <label for="regFullName" class="form-label">Full Name</label>
+                        <input type="text" class="form-control" id="regFullName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="regUsername" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="regUsername" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="regEmail" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="regEmail" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="regPassword" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="regPassword" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="regPasswordConfirm" class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" id="regPasswordConfirm" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-person-plus"></i> Register
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Login
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const response = await fetch('/login', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            username: document.getElementById('username').value,
+            password: document.getElementById('password').value
+        })
+    });
+    
+    if (response.ok) {
+        window.location.href = '/dashboard';
+    } else {
+        alert('Invalid credentials');
+    }
+});
+
+// Register
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const password = document.getElementById('regPassword').value;
+    const confirm = document.getElementById('regPasswordConfirm').value;
+    
+    if (password !== confirm) {
+        alert('Passwords do not match');
+        return;
+    }
+    
+    const response = await fetch('/register', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+            full_name: document.getElementById('regFullName').value,
+            username: document.getElementById('regUsername').value,
+            email: document.getElementById('regEmail').value,
+            password: password
+        })
+    });
+    
+    if (response.ok) {
+        alert('Account created successfully! Please login.');
+        bootstrap.Modal.getInstance(document.getElementById('registerModal')).hide();
+        document.getElementById('registerForm').reset();
+    } else {
+        const data = await response.json();
+        alert(data.error || 'Registration failed');
+    }
+});
+</script>
+{% endblock %}

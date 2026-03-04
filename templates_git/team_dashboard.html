@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Team Dashboard - Time Tracker{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <h2><i class="bi bi-people"></i> Team Dashboard</h2>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-end">
+                        <div class="col-md-3">
+                            <label for="startDate" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="startDate">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="endDate" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="endDate">
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-primary" onclick="loadTeamMetrics()">
+                                <i class="bi bi-arrow-clockwise"></i> Update
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Team Utilization</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th class="text-end">Total Hours</th>
+                                <th class="text-end">Project Hours</th>
+                                <th class="text-end">Project Util %</th>
+                                <th class="text-end">Admin Hours</th>
+                                <th class="text-end">Admin Util %</th>
+                                <th class="text-end">PTO Hours</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teamTable">
+                            <tr><td colspan="7" class="text-center">Select date range and click Update</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set default to current month
+const today = new Date();
+document.getElementById('startDate').valueAsDate = new Date(today.getFullYear(), today.getMonth(), 1);
+document.getElementById('endDate').valueAsDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+async function loadTeamMetrics() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    const response = await fetch(`/api/admin/team-metrics?start_date=${startDate}&end_date=${endDate}`);
+    const data = await response.json();
+    
+    const tbody = document.getElementById('teamTable');
+    tbody.innerHTML = data.users.map(u => `
+        <tr>
+            <td><strong>${u.full_name || u.username}</strong></td>
+            <td class="text-end">${(u.total_hours || 0).toFixed(1)}</td>
+            <td class="text-end">${(u.project_hours || 0).toFixed(1)}</td>
+            <td class="text-end">${(u.project_utilization || 0).toFixed(1)}%</td>
+            <td class="text-end">${(u.admin_hours || 0).toFixed(1)}</td>
+            <td class="text-end">${(u.admin_utilization || 0).toFixed(1)}%</td>
+            <td class="text-end">${(u.pto_hours || 0).toFixed(1)}</td>
+        </tr>
+    `).join('');
+}
+</script>
+{% endblock %}

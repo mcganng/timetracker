@@ -1,0 +1,576 @@
+{% extends "base.html" %}
+{% block title %}System Configuration - Time Tracker{% endblock %}
+
+{% block extra_css %}
+<style>
+.config-section { margin-bottom: 2rem; }
+.table-sm td { padding: 0.5rem; vertical-align: middle; }
+.table-sm th {
+    padding: 0.5rem;
+    background-color: #f8f9fa;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+.view-only-notice {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2><i class="bi bi-sliders"></i> System Configuration</h2>
+
+    {% if session.role != 'admin' %}
+    <div class="view-only-notice">
+        <i class="bi bi-info-circle"></i> 
+        <strong>View-Only Mode:</strong> You can view configuration settings but only administrators can make changes.
+    </div>
+    {% endif %}
+
+    <!-- Job Task Codes -->
+    <div class="config-section">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-list-task"></i> Job Task Codes</h5>
+                {% if session.role == 'admin' %}
+                <button class="btn btn-sm btn-light" onclick="showAddTaskCodeModal()">
+                    <i class="bi bi-plus-circle"></i> Add Task Code
+                </button>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Task Code</th>
+                                <th>Task Name</th>
+                                <th>Description</th>
+                                {% if session.role == 'admin' %}
+                                <th class="text-center" style="width: 120px;">Actions</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody id="taskCodesBody">
+                            <tr><td colspan="{% if session.role == 'admin' %}4{% else %}3{% endif %}" class="text-center p-3">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Job Codes -->
+    <div class="config-section">
+        <div class="card">
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-gear"></i> Admin Job Codes</h5>
+                {% if session.role == 'admin' %}
+                <button class="btn btn-sm btn-light" onclick="showAddAdminCodeModal()">
+                    <i class="bi bi-plus-circle"></i> Add Admin Code
+                </button>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Admin Code</th>
+                                <th>Description</th>
+                                {% if session.role == 'admin' %}
+                                <th class="text-center" style="width: 120px;">Actions</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody id="adminCodesBody">
+                            <tr><td colspan="{% if session.role == 'admin' %}3{% else %}2{% endif %}" class="text-center p-3">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Company Holidays -->
+    <div class="config-section">
+        <div class="card">
+            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-calendar-event"></i> Company Holidays</h5>
+                {% if session.role == 'admin' %}
+                <button class="btn btn-sm btn-light" onclick="showAddHolidayModal()">
+                    <i class="bi bi-plus-circle"></i> Add Holiday
+                </button>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Holiday Name</th>
+                                <th>Description</th>
+                                {% if session.role == 'admin' %}
+                                <th class="text-center" style="width: 120px;">Actions</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody id="holidaysBody">
+                            <tr><td colspan="{% if session.role == 'admin' %}4{% else %}3{% endif %}" class="text-center p-3">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="statusMessage" class="mt-3"></div>
+</div>
+
+<!-- Task Code Modal -->
+<div class="modal fade" id="taskCodeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="taskCodeModalTitle">Add Task Code</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="taskCodeOriginal">
+                <div class="mb-3">
+                    <label class="form-label">Task Code <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="taskCode" required placeholder="e.g. 130">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Task Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="taskName" required placeholder="e.g. Design">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-control" id="taskDescription" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveTaskCode()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Admin Code Modal -->
+<div class="modal fade" id="adminCodeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title" id="adminCodeModalTitle">Add Admin Code</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="adminCodeId">
+                <div class="mb-3">
+                    <label class="form-label">Admin Code <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="adminCode" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Description <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="adminDescription" required>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveAdminCode()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Holiday Modal -->
+<div class="modal fade" id="holidayModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="holidayModalTitle">Add Holiday</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="holidayId">
+                <div class="mb-3">
+                    <label class="form-label">Date <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="holidayDate" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Holiday Name <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="holidayName" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Description</label>
+                    <textarea class="form-control" id="holidayDescription" rows="2"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveHoliday()">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const isAdmin = {{ 'true' if session.role == 'admin' else 'false' }};
+let adminCodesData = [];
+let holidaysData = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadTaskCodes();
+    loadAdminCodes();
+    loadHolidays();
+});
+
+// ─── TASK CODES (uses task_code as primary key, not id) ──────────────────────
+async function loadTaskCodes() {
+    try {
+        const response = await fetch('/api/config/job-task-codes');
+        const codes = await response.json();
+        const tbody = document.getElementById('taskCodesBody');
+        const cols = isAdmin ? 4 : 3;
+
+        if (!codes.length) {
+            tbody.innerHTML = `<tr><td colspan="${cols}" class="text-center text-muted p-3">No task codes configured</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = codes.map(c => `
+            <tr>
+                <td><strong>${c.task_code || ''}</strong></td>
+                <td>${c.task_name || ''}</td>
+                <td>${c.description || '<span class="text-muted">—</span>'}</td>
+                ${isAdmin ? `
+                <td class="text-center">
+                    <button class="btn btn-sm btn-warning me-1"
+                        data-code="${c.task_code}"
+                        data-name="${(c.task_name||'').replace(/"/g,'&quot;')}"
+                        data-desc="${(c.description||'').replace(/"/g,'&quot;')}"
+                        onclick="editTaskCode(this)" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger"
+                        data-code="${c.task_code}"
+                        onclick="deleteTaskCode(this)" title="Delete">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>` : ''}
+            </tr>
+        `).join('');
+    } catch (err) {
+        console.error('loadTaskCodes error:', err);
+        showStatus('Error loading task codes', 'danger');
+    }
+}
+
+function showAddTaskCodeModal() {
+    document.getElementById('taskCodeModalTitle').textContent = 'Add Task Code';
+    document.getElementById('taskCodeOriginal').value = '';
+    document.getElementById('taskCode').value = '';
+    document.getElementById('taskName').value = '';
+    document.getElementById('taskDescription').value = '';
+    new bootstrap.Modal(document.getElementById('taskCodeModal')).show();
+}
+
+function editTaskCode(btn) {
+    document.getElementById('taskCodeModalTitle').textContent = 'Edit Task Code';
+    document.getElementById('taskCodeOriginal').value = btn.dataset.code;
+    document.getElementById('taskCode').value = btn.dataset.code;
+    document.getElementById('taskName').value = btn.dataset.name;
+    document.getElementById('taskDescription').value = btn.dataset.desc;
+    new bootstrap.Modal(document.getElementById('taskCodeModal')).show();
+}
+
+async function saveTaskCode() {
+    const original = document.getElementById('taskCodeOriginal').value;
+    const data = {
+        task_code: document.getElementById('taskCode').value.trim(),
+        task_name: document.getElementById('taskName').value.trim(),
+        description: document.getElementById('taskDescription').value.trim()
+    };
+
+    if (!data.task_code || !data.task_name) {
+        showStatus('Task code and name are required', 'warning');
+        return;
+    }
+
+    // Use task_code as the identifier (it's the primary key)
+    const url = original ? `/api/config/job-task-codes/${encodeURIComponent(original)}` : '/api/config/job-task-codes';
+    const method = original ? 'PUT' : 'POST';
+
+    try {
+        const response = await fetch(url, {
+            method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            showStatus(original ? 'Task code updated' : 'Task code added', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('taskCodeModal')).hide();
+            loadTaskCodes();
+        } else {
+            const err = await response.json().catch(() => ({}));
+            showStatus('Error: ' + (err.error || 'Could not save'), 'danger');
+        }
+    } catch (err) {
+        console.error('saveTaskCode error:', err);
+        showStatus('Error saving task code', 'danger');
+    }
+}
+
+async function deleteTaskCode(btn) {
+    const code = btn.dataset.code;
+    if (!confirm(`Delete task code "${code}"?`)) return;
+
+    try {
+        const response = await fetch(`/api/config/job-task-codes/${encodeURIComponent(code)}`, {method: 'DELETE'});
+        if (response.ok) {
+            showStatus('Task code deleted', 'success');
+            loadTaskCodes();
+        } else {
+            showStatus('Error deleting task code', 'danger');
+        }
+    } catch (err) {
+        console.error('deleteTaskCode error:', err);
+        showStatus('Error deleting task code', 'danger');
+    }
+}
+
+// ─── ADMIN CODES (uses id) ──────────────────────────────────────────────────
+async function loadAdminCodes() {
+    try {
+        const response = await fetch('/api/config/admin-job-codes');
+        adminCodesData = await response.json();
+        const tbody = document.getElementById('adminCodesBody');
+        const cols = isAdmin ? 3 : 2;
+
+        if (!adminCodesData.length) {
+            tbody.innerHTML = `<tr><td colspan="${cols}" class="text-center text-muted p-3">No admin codes configured</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = adminCodesData.map((c, i) => `
+            <tr>
+                <td><strong>${c.admin_code || ''}</strong></td>
+                <td>${c.description || '<span class="text-muted">—</span>'}</td>
+                ${isAdmin ? `
+                <td class="text-center">
+                    <button class="btn btn-sm btn-warning me-1" onclick="editAdminCode(${i})" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteAdminCode(${i})" title="Delete">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>` : ''}
+            </tr>
+        `).join('');
+    } catch (err) {
+        console.error('loadAdminCodes error:', err);
+        showStatus('Error loading admin codes', 'danger');
+    }
+}
+
+function showAddAdminCodeModal() {
+    document.getElementById('adminCodeModalTitle').textContent = 'Add Admin Code';
+    document.getElementById('adminCodeId').value = '';
+    document.getElementById('adminCode').value = '';
+    document.getElementById('adminDescription').value = '';
+    new bootstrap.Modal(document.getElementById('adminCodeModal')).show();
+}
+
+function editAdminCode(i) {
+    const c = adminCodesData[i];
+    document.getElementById('adminCodeModalTitle').textContent = 'Edit Admin Code';
+    document.getElementById('adminCodeId').value = c.id;
+    document.getElementById('adminCode').value = c.admin_code || '';
+    document.getElementById('adminDescription').value = c.description || '';
+    new bootstrap.Modal(document.getElementById('adminCodeModal')).show();
+}
+
+async function saveAdminCode() {
+    const id = document.getElementById('adminCodeId').value;
+    const data = {
+        admin_code: document.getElementById('adminCode').value.trim(),
+        description: document.getElementById('adminDescription').value.trim()
+    };
+
+    if (!data.admin_code || !data.description) {
+        showStatus('Admin code and description are required', 'warning');
+        return;
+    }
+
+    const url = id ? `/api/config/admin-job-codes/${id}` : '/api/config/admin-job-codes';
+    const method = id ? 'PUT' : 'POST';
+
+    try {
+        const response = await fetch(url, {
+            method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            showStatus(id ? 'Admin code updated' : 'Admin code added', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('adminCodeModal')).hide();
+            loadAdminCodes();
+        } else {
+            const err = await response.json().catch(() => ({}));
+            showStatus('Error: ' + (err.error || 'Could not save'), 'danger');
+        }
+    } catch (err) {
+        showStatus('Error saving admin code', 'danger');
+    }
+}
+
+async function deleteAdminCode(i) {
+    const c = adminCodesData[i];
+    if (!confirm(`Delete admin code "${c.admin_code}"?`)) return;
+
+    try {
+        const response = await fetch(`/api/config/admin-job-codes/${c.id}`, {method: 'DELETE'});
+        if (response.ok) {
+            showStatus('Admin code deleted', 'success');
+            loadAdminCodes();
+        } else {
+            showStatus('Error deleting admin code', 'danger');
+        }
+    } catch (err) {
+        showStatus('Error deleting admin code', 'danger');
+    }
+}
+
+// ─── HOLIDAYS (uses id) ─────────────────────────────────────────────────────
+async function loadHolidays() {
+    try {
+        const response = await fetch('/api/config/holidays');
+        holidaysData = await response.json();
+        const tbody = document.getElementById('holidaysBody');
+        const cols = isAdmin ? 4 : 3;
+
+        if (!holidaysData.length) {
+            tbody.innerHTML = `<tr><td colspan="${cols}" class="text-center text-muted p-3">No holidays configured</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = holidaysData.map((h, i) => `
+            <tr>
+                <td><strong>${formatDate(h.holiday_date)}</strong></td>
+                <td>${h.holiday_name || ''}</td>
+                <td>${h.description || '<span class="text-muted">—</span>'}</td>
+                ${isAdmin ? `
+                <td class="text-center">
+                    <button class="btn btn-sm btn-warning me-1" onclick="editHoliday(${i})" title="Edit">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteHoliday(${i})" title="Delete">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>` : ''}
+            </tr>
+        `).join('');
+    } catch (err) {
+        console.error('loadHolidays error:', err);
+        showStatus('Error loading holidays', 'danger');
+    }
+}
+
+function showAddHolidayModal() {
+    document.getElementById('holidayModalTitle').textContent = 'Add Holiday';
+    document.getElementById('holidayId').value = '';
+    document.getElementById('holidayDate').value = '';
+    document.getElementById('holidayName').value = '';
+    document.getElementById('holidayDescription').value = '';
+    new bootstrap.Modal(document.getElementById('holidayModal')).show();
+}
+
+function editHoliday(i) {
+    const h = holidaysData[i];
+    document.getElementById('holidayModalTitle').textContent = 'Edit Holiday';
+    document.getElementById('holidayId').value = h.id;
+    document.getElementById('holidayDate').value = h.holiday_date || '';
+    document.getElementById('holidayName').value = h.holiday_name || '';
+    document.getElementById('holidayDescription').value = h.description || '';
+    new bootstrap.Modal(document.getElementById('holidayModal')).show();
+}
+
+async function saveHoliday() {
+    const id = document.getElementById('holidayId').value;
+    const data = {
+        holiday_date: document.getElementById('holidayDate').value,
+        holiday_name: document.getElementById('holidayName').value.trim(),
+        description: document.getElementById('holidayDescription').value.trim()
+    };
+
+    if (!data.holiday_date || !data.holiday_name) {
+        showStatus('Date and name are required', 'warning');
+        return;
+    }
+
+    const url = id ? `/api/config/holidays/${id}` : '/api/config/holidays';
+    const method = id ? 'PUT' : 'POST';
+
+    try {
+        const response = await fetch(url, {
+            method,
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            showStatus(id ? 'Holiday updated' : 'Holiday added', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('holidayModal')).hide();
+            loadHolidays();
+        } else {
+            const err = await response.json().catch(() => ({}));
+            showStatus('Error: ' + (err.error || 'Could not save'), 'danger');
+        }
+    } catch (err) {
+        showStatus('Error saving holiday', 'danger');
+    }
+}
+
+async function deleteHoliday(i) {
+    const h = holidaysData[i];
+    if (!confirm(`Delete holiday "${h.holiday_name}"?`)) return;
+
+    try {
+        const response = await fetch(`/api/config/holidays/${h.id}`, {method: 'DELETE'});
+        if (response.ok) {
+            showStatus('Holiday deleted', 'success');
+            loadHolidays();
+        } else {
+            showStatus('Error deleting holiday', 'danger');
+        }
+    } catch (err) {
+        showStatus('Error deleting holiday', 'danger');
+    }
+}
+
+// ─── HELPERS ────────────────────────────────────────────────────────────────
+function formatDate(s) {
+    if (!s) return '';
+    // Parse as local date to avoid timezone shift
+    const [y, m, d] = s.split('-');
+    return `${m}/${d}/${y}`;
+}
+
+function showStatus(msg, type) {
+    const div = document.getElementById('statusMessage');
+    div.innerHTML = `<div class="alert alert-${type} alert-dismissible fade show">
+        ${msg}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+    setTimeout(() => div.innerHTML = '', 5000);
+}
+</script>
+{% endblock %}

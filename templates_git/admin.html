@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Admin - Time Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2><i class="bi bi-shield-check"></i> Admin Panel</h2>
+    <p class="text-muted">Administrative tools and settings</p>
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-people"></i> User Management</h5>
+                </div>
+                <div class="card-body">
+                    <p>Manage user accounts, change passwords, and activate/deactivate users.</p>
+                    <a href="/admin/user-management" class="btn btn-primary">
+                        <i class="bi bi-people"></i> Manage Users
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="bi bi-person-gear"></i> Manage User Data</h5>
+                </div>
+                <div class="card-body">
+                    <p>View and edit other users' projects and time entries. Modify data as needed.</p>
+                    <a href="/admin/manage-user-data" class="btn btn-danger">
+                        <i class="bi bi-person-gear"></i> Manage Data
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-gear"></i> Server Config</h5>
+                </div>
+                <div class="card-body">
+                    <p>Configure network settings, timezone, NTP servers, and view server information.</p>
+                    <a href="/admin/server-config" class="btn btn-success">
+                        <i class="bi bi-gear"></i> Server Config
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-code-slash"></i> Code Editor</h5>
+                </div>
+                <div class="card-body">
+                    <p>Edit application code, templates, and configuration files directly.</p>
+                    <a href="/admin/code-editor" class="btn btn-warning">
+                        <i class="bi bi-code-slash"></i> Code Editor
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-speedometer2"></i> My Dashboard</h5>
+                </div>
+                <div class="card-body">
+                    <p>View your personal time tracking dashboard and metrics.</p>
+                    <a href="/dashboard" class="btn btn-info">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="bi bi-graph-up"></i> System Reports</h5>
+                </div>
+                <div class="card-body">
+                    <p>View aggregated project hours and user utilization statistics.</p>
+                    <a href="/admin/reports" class="btn btn-dark">
+                        <i class="bi bi-graph-up"></i> View Reports
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="bi bi-archive"></i> System Backup</h5>
+                </div>
+                <div class="card-body">
+                    <p>Create and download full system backups. Restore to a new Ubuntu server with one command.</p>
+                    <a href="/admin/system-backup" class="btn btn-warning">
+                        <i class="bi bi-archive"></i> Manage Backups
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

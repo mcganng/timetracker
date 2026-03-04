@@ -1,0 +1,531 @@
+{% extends "base.html" %}
+{% block title %}Time Entry - Time Tracker{% endblock %}
+
+{% block extra_css %}
+<style>
+.category-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.85em;
+}
+.category-Project  { background-color: #0d6efd; color: white; }
+.category-Admin    { background-color: #6c757d; color: white; }
+.category-PTO      { background-color: #ffc107; color: black; }
+.category-Holiday  { background-color: #dc3545; color: white; }
+.table-sm td {
+    padding: 0.4rem;
+    font-size: 0.9em;
+    vertical-align: middle;
+}
+.table-sm th {
+    padding: 0.5rem;
+    font-size: 0.85em;
+    background-color: #f8f9fa;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+.autofill-indicator {
+    font-size: 0.75em;
+    color: #198754;
+    display: none;
+}
+.autofill-indicator.visible { display: inline; }
+
+/* Sortable column headers */
+.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+.sortable:hover {
+    background-color: rgba(0, 0, 0, 0.08);
+}
+.sortable i {
+    opacity: 0.3;
+    font-size: 0.75em;
+    margin-left: 4px;
+}
+.sortable:hover i {
+    opacity: 0.6;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2><i class="bi bi-pencil-square"></i> Time Entry</h2>
+
+    <!-- Add Time Entry Form -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Add Time Entry</h5>
+                </div>
+                <div class="card-body">
+                    <form id="timeEntryForm">
+                        <div class="row">
+                            <div class="col-md-2">
+                                <label for="entryDate" class="form-label">Date <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="entryDate" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="jobNumber" class="form-label">Job Number <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="jobNumber" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="taskCode" class="form-label">Task Code <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="taskCode" required>
+                                <small class="autofill-indicator" id="taskAutofill">
+                                    <i class="bi bi-check-circle-fill"></i> Auto-filled
+                                </small>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="jobType" class="form-label">Job Type</label>
+                                <select class="form-select" id="jobType">
+                                    <option value="Job">Job</option>
+                                    <option value="Absence">Absence</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="hours" class="form-label">Hours <span class="text-danger">*</span></label>
+                                <input type="number" step="0.1" class="form-control" id="hours" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label for="category" class="form-label">Category</label>
+                                <select class="form-select" id="category">
+                                    <option value="Project">Project</option>
+                                    <option value="Admin">Admin</option>
+                                    <option value="PTO">PTO</option>
+                                    <option value="Holiday">Holiday</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <label for="description" class="form-label">Description</label>
+                                <input type="text" class="form-control" id="description">
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Add Entry
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Entries with Search -->
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">
+            <h5 class="mb-0">Filter Entries</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-2">
+                    <label for="filterStartDate" class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="filterStartDate">
+                </div>
+                <div class="col-md-2">
+                    <label for="filterEndDate" class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="filterEndDate">
+                </div>
+                <div class="col-md-2">
+                    <label for="searchJobNumber" class="form-label">Job Number</label>
+                    <input type="text" class="form-control" id="searchJobNumber" placeholder="Search...">
+                </div>
+                <div class="col-md-2">
+                    <label for="searchTaskCode" class="form-label">Task Code</label>
+                    <input type="text" class="form-control" id="searchTaskCode" placeholder="Search...">
+                </div>
+                <div class="col-md-3">
+                    <label for="searchCustomer" class="form-label">Customer Name</label>
+                    <input type="text" class="form-control" id="searchCustomer" placeholder="Search...">
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button class="btn btn-primary w-100" onclick="loadEntries()">
+                        <i class="bi bi-funnel"></i> Filter
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Entries with Sortable Headers -->
+    <div class="card">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Recent Entries</h5>
+            <div>
+                <span id="entriesCount" class="me-3">0 entries</span>
+                <span id="totalHours">0.0 hrs total</span>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                <table class="table table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th class="sortable" onclick="sortEntries('entry_date')">
+                                Date <i class="bi bi-arrow-down-up"></i>
+                            </th>
+                            <th class="sortable" onclick="sortEntries('job_number')">
+                                Job Number <i class="bi bi-arrow-down-up"></i>
+                            </th>
+                            <th class="sortable" onclick="sortEntries('job_task_code')">
+                                Task No <i class="bi bi-arrow-down-up"></i>
+                            </th>
+                            <th class="sortable" onclick="sortEntries('job_type')">
+                                Job Type <i class="bi bi-arrow-down-up"></i>
+                            </th>
+                            <th class="sortable" onclick="sortEntries('hours')">
+                                Hours <i class="bi bi-arrow-down-up"></i>
+                            </th>
+                            <th class="sortable" onclick="sortEntries('category')">
+                                Category <i class="bi bi-arrow-down-up"></i>
+                            </th>
+                            <th class="sortable" onclick="sortEntries('customer_name')">
+                                Customer Name <i class="bi bi-arrow-down-up"></i>
+                            </th>
+                            <th class="sortable" onclick="sortEntries('job_description')">
+                                Job Description <i class="bi bi-arrow-down-up"></i>
+                            </th>
+                            <th class="text-center" style="width: 100px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="entriesTableBody">
+                        <tr><td colspan="9" class="text-center p-3">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="statusMessage" class="mt-3"></div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">Edit Time Entry</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editEntryId">
+                <div class="mb-3">
+                    <label for="editDate" class="form-label">Date</label>
+                    <input type="date" class="form-control" id="editDate">
+                </div>
+                <div class="mb-3">
+                    <label for="editJobNumber" class="form-label">Job Number</label>
+                    <input type="text" class="form-control" id="editJobNumber">
+                </div>
+                <div class="mb-3">
+                    <label for="editTaskCode" class="form-label">Task Code</label>
+                    <input type="text" class="form-control" id="editTaskCode">
+                </div>
+                <div class="mb-3">
+                    <label for="editJobType" class="form-label">Job Type</label>
+                    <select class="form-select" id="editJobType">
+                        <option value="Job">Job</option>
+                        <option value="Absence">Absence</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="editHours" class="form-label">Hours</label>
+                    <input type="number" step="0.1" class="form-control" id="editHours">
+                </div>
+                <div class="mb-3">
+                    <label for="editCategory" class="form-label">Category</label>
+                    <select class="form-select" id="editCategory">
+                        <option value="Project">Project</option>
+                        <option value="Admin">Admin</option>
+                        <option value="PTO">PTO</option>
+                        <option value="Holiday">Holiday</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="editDescription" class="form-label">Description</label>
+                    <input type="text" class="form-control" id="editDescription">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveEdit()">Save Changes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Global variables for sorting
+let entriesData = [];
+let sortColumn = 'entry_date';
+let sortDirection = 'desc';
+
+// Set default filter dates
+const today = new Date();
+const thirtyDaysAgo = new Date();
+thirtyDaysAgo.setDate(today.getDate() - 30);
+document.getElementById('filterStartDate').valueAsDate = thirtyDaysAgo;
+document.getElementById('filterEndDate').valueAsDate = today;
+
+// Set default entry date to today
+document.getElementById('entryDate').valueAsDate = today;
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadEntries();
+    setupJobNumberAutofill();
+});
+
+// Format date helper
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return `${month.toString().padStart(2, '0')}/${day.toString().padStart(2, '0')}/${year}`;
+}
+
+// Sort entries
+function sortEntries(column) {
+    if (sortColumn === column) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortColumn = column;
+        sortDirection = 'asc';
+    }
+    
+    entriesData.sort((a, b) => {
+        let aVal = a[column];
+        let bVal = b[column];
+        
+        // Handle numeric columns
+        if (column === 'hours' || column === 'job_task_code') {
+            aVal = parseFloat(aVal) || 0;
+            bVal = parseFloat(bVal) || 0;
+        } else if (typeof aVal === 'string') {
+            aVal = (aVal || '').toLowerCase();
+            bVal = (bVal || '').toLowerCase();
+        }
+        
+        if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+    });
+    
+    renderEntries();
+}
+
+async function loadEntries() {
+    const startDate = document.getElementById('filterStartDate').value;
+    const endDate = document.getElementById('filterEndDate').value;
+    const searchJobNumber = document.getElementById('searchJobNumber').value.toLowerCase();
+    const searchTaskCode = document.getElementById('searchTaskCode').value.toLowerCase();
+    const searchCustomer = document.getElementById('searchCustomer').value.toLowerCase();
+
+    try {
+        const response = await fetch(`/api/time-entries?start_date=${startDate}&end_date=${endDate}`);
+        let entries = await response.json();
+        
+        // Apply search filters
+        if (searchJobNumber) {
+            entries = entries.filter(e => 
+                (e.job_number || '').toLowerCase().includes(searchJobNumber)
+            );
+        }
+        if (searchTaskCode) {
+            entries = entries.filter(e => 
+                String(e.job_task_code || '').toLowerCase().includes(searchTaskCode)
+            );
+        }
+        if (searchCustomer) {
+            entries = entries.filter(e => 
+                (e.customer_name || '').toLowerCase().includes(searchCustomer)
+            );
+        }
+        
+        entriesData = entries;
+        sortEntries(sortColumn); // Apply current sort
+    } catch (error) {
+        showStatus('Error loading entries: ' + error.message, 'danger');
+    }
+}
+
+function renderEntries() {
+    const tbody = document.getElementById('entriesTableBody');
+    
+    if (!entriesData.length) {
+        tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted p-3">No entries found</td></tr>';
+        document.getElementById('entriesCount').textContent = '0 entries';
+        document.getElementById('totalHours').textContent = '0.0 hrs total';
+        return;
+    }
+
+    const totalHours = entriesData.reduce((sum, e) => sum + parseFloat(e.hours || 0), 0);
+    document.getElementById('entriesCount').textContent = `${entriesData.length} entries`;
+    document.getElementById('totalHours').textContent = `${totalHours.toFixed(1)} hrs total`;
+
+    tbody.innerHTML = entriesData.map(e => `
+        <tr>
+            <td>${formatDate(e.entry_date)}</td>
+            <td><strong>${e.job_number || '—'}</strong></td>
+            <td>${e.job_task_code || '—'}</td>
+            <td>${e.job_type || '—'}</td>
+            <td><strong>${parseFloat(e.hours || 0).toFixed(1)}</strong></td>
+            <td><span class="category-badge category-${e.category}">${e.category}</span></td>
+            <td>${e.customer_name || '—'}</td>
+            <td>${e.job_description || '—'}</td>
+            <td class="text-center">
+                <button class="btn btn-sm btn-warning me-1" onclick="editEntry(${e.id})" title="Edit">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteEntry(${e.id})" title="Delete">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Form submission
+document.getElementById('timeEntryForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const data = {
+        entry_date:      document.getElementById('entryDate').value,
+        job_number:      document.getElementById('jobNumber').value,
+        job_task_code:   document.getElementById('taskCode').value,
+        job_type:        document.getElementById('jobType').value,
+        hours:           parseFloat(document.getElementById('hours').value),
+        category:        document.getElementById('category').value,
+        description:     document.getElementById('description').value
+    };
+
+    try {
+        const response = await fetch('/api/time-entries', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            showStatus('Time entry added successfully', 'success');
+            document.getElementById('timeEntryForm').reset();
+            document.getElementById('entryDate').valueAsDate = new Date();
+            document.getElementById('taskAutofill').classList.remove('visible');
+            loadEntries();
+        } else {
+            const error = await response.json();
+            showStatus('Error: ' + (error.error || 'Failed to add entry'), 'danger');
+        }
+    } catch (error) {
+        showStatus('Error adding entry: ' + error.message, 'danger');
+    }
+});
+
+function editEntry(id) {
+    const entry = entriesData.find(e => e.id === id);
+    if (!entry) return;
+
+    document.getElementById('editEntryId').value    = entry.id;
+    document.getElementById('editDate').value           = entry.entry_date ? entry.entry_date.slice(0, 10) : '';
+    document.getElementById('editJobNumber').value      = entry.job_number || '';
+    document.getElementById('editTaskCode').value       = entry.job_task_code || '';
+    document.getElementById('editJobType').value        = entry.job_type || 'Job';
+    document.getElementById('editHours').value          = entry.hours || 0;
+    document.getElementById('editCategory').value       = entry.category || 'Project';
+    document.getElementById('editDescription').value    = entry.description || '';
+
+    new bootstrap.Modal(document.getElementById('editModal')).show();
+}
+
+async function saveEdit() {
+    const id = document.getElementById('editEntryId').value;
+    const data = {
+        entry_date:      document.getElementById('editDate').value,
+        job_number:      document.getElementById('editJobNumber').value,
+        job_task_code:   document.getElementById('editTaskCode').value,
+        job_type:        document.getElementById('editJobType').value,
+        hours:           parseFloat(document.getElementById('editHours').value),
+        category:        document.getElementById('editCategory').value,
+        description:     document.getElementById('editDescription').value
+    };
+
+    try {
+        const response = await fetch(`/api/time-entries/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            showStatus('Entry updated successfully', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
+            loadEntries();
+        } else {
+            showStatus('Error updating entry', 'danger');
+        }
+    } catch (error) {
+        showStatus('Error updating entry: ' + error.message, 'danger');
+    }
+}
+
+async function deleteEntry(id) {
+    if (!confirm('Delete this time entry?')) return;
+
+    try {
+        const response = await fetch(`/api/time-entries/${id}`, { method: 'DELETE' });
+        
+        if (response.ok) {
+            showStatus('Entry deleted successfully', 'success');
+            loadEntries();
+        } else {
+            showStatus('Error deleting entry', 'danger');
+        }
+    } catch (error) {
+        showStatus('Error deleting entry: ' + error.message, 'danger');
+    }
+}
+
+function setupJobNumberAutofill() {
+    const jobNumberInput = document.getElementById('jobNumber');
+    const taskCodeInput = document.getElementById('taskCode');
+    const indicator = document.getElementById('taskAutofill');
+
+    jobNumberInput.addEventListener('blur', async () => {
+        const jobNumber = jobNumberInput.value.trim();
+        if (!jobNumber) return;
+
+        try {
+            const response = await fetch(`/api/job-lookup/${encodeURIComponent(jobNumber)}`);
+            if (response.ok) {
+                const data = await response.json();
+                if (data.task_code) {
+                    taskCodeInput.value = data.task_code;
+                    indicator.classList.add('visible');
+                    setTimeout(() => indicator.classList.remove('visible'), 3000);
+                }
+            }
+        } catch (error) {
+            console.error('Job lookup error:', error);
+        }
+    });
+}
+
+function showStatus(message, type) {
+    const div = document.getElementById('statusMessage');
+    div.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    setTimeout(() => { div.innerHTML = ''; }, 5000);
+}
+</script>
+{% endblock %}

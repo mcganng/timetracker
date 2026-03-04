@@ -1,0 +1,589 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Time Tracker{% endblock %}
+
+{% block extra_css %}
+<style>
+.metric-card {
+    border-left: 4px solid;
+    transition: transform 0.2s;
+}
+.metric-card:hover {
+    transform: translateY(-2px);
+}
+.metric-card.primary { border-left-color: #0d6efd; }
+.metric-card.success { border-left-color: #198754; }
+.metric-card.info    { border-left-color: #0dcaf0; }
+.metric-card.warning { border-left-color: #ffc107; }
+.metric-card.danger  { border-left-color: #dc3545; }
+
+.table-sm td { padding: 0.4rem; font-size: 0.9em; }
+.table-sm th {
+    padding: 0.5rem;
+    font-size: 0.85em;
+    background-color: #f8f9fa;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+.progress-bar-container {
+    background-color: #e9ecef;
+    border-radius: 4px;
+    height: 16px;
+    min-width: 100px;
+    flex: 1;
+}
+.progress-bar-fill {
+    height: 16px;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+/* Sortable table headers */
+.sortable {
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+}
+.sortable:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+.sortable i {
+    opacity: 0.3;
+    font-size: 0.8em;
+    margin-left: 4px;
+}
+.sortable:hover i {
+    opacity: 0.6;
+}
+
+/* Upcoming holidays in metric card style */
+.holiday-list-item {
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    font-size: 0.85rem;
+}
+.holiday-list-item:last-child {
+    border-bottom: none;
+}
+.holiday-list-date {
+    font-weight: 600;
+    color: #dc3545;
+}
+.holiday-list-name {
+    color: #6c757d;
+    font-size: 0.8rem;
+}
+
+/* Totals row styling */
+.totals-row {
+    background-color: #e9ecef;
+    font-weight: bold;
+    border-top: 3px solid #495057;
+}
+.totals-row td {
+    padding: 0.6rem 0.4rem !important;
+    font-size: 0.95em;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-speedometer2"></i> Dashboard</h2>
+        <div class="d-flex gap-2">
+            <input type="date" class="form-control" id="startDate" style="width: auto;">
+            <input type="date" class="form-control" id="endDate" style="width: auto;">
+            <button class="btn btn-primary" onclick="loadMetrics()">
+                <i class="bi bi-arrow-clockwise"></i> Update
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary Metrics Cards (5 cards including Upcoming Holidays) -->
+    <div class="row mb-4" id="metricsCards">
+        <div class="col-xl col-lg-4 col-md-6 mb-3 mb-xl-0">
+            <div class="card metric-card primary h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Total Hours</h6>
+                            <h3 class="mb-0" id="totalHours">-</h3>
+                        </div>
+                        <i class="bi bi-clock-history text-primary" style="font-size: 2rem;"></i>
+                    </div>
+                    <small class="text-muted">
+                        <span id="weeks">-</span> weeks | 
+                        <span id="availableHours">-</span> available
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl col-lg-4 col-md-6 mb-3 mb-xl-0">
+            <div class="card metric-card success h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Project Hours</h6>
+                            <h3 class="mb-0" id="projectHours">-</h3>
+                        </div>
+                        <i class="bi bi-briefcase text-success" style="font-size: 2rem;"></i>
+                    </div>
+                    <small class="text-muted">
+                        <span id="projectUtil">-</span>% utilization
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl col-lg-4 col-md-6 mb-3 mb-xl-0">
+            <div class="card metric-card info h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Admin Hours</h6>
+                            <h3 class="mb-0" id="adminHours">-</h3>
+                        </div>
+                        <i class="bi bi-gear text-info" style="font-size: 2rem;"></i>
+                    </div>
+                    <small class="text-muted">
+                        <span id="adminUtil">-</span>% utilization
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl col-lg-4 col-md-6 mb-3 mb-xl-0">
+            <div class="card metric-card warning h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">PTO Hours</h6>
+                            <h3 class="mb-0" id="ptoHours">-</h3>
+                        </div>
+                        <i class="bi bi-calendar-x text-warning" style="font-size: 2rem;"></i>
+                    </div>
+                    <small class="text-muted">
+                        Holiday: <span id="holidayHours">-</span> hrs
+                    </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl col-lg-4 col-md-6 mb-3 mb-xl-0">
+            <div class="card metric-card danger h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="text-muted mb-0">Upcoming Holidays</h6>
+                        <i class="bi bi-calendar-event text-danger" style="font-size: 1.5rem;"></i>
+                    </div>
+                    <div id="upcomingHolidays" style="min-height: 60px;">
+                        <small class="text-muted">Loading...</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Projects Budget Tracking (MOVED UP - now appears first) -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="bi bi-folder2-open"></i> Active Projects Budget Tracking</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th class="sortable" onclick="sortProjects('job_number')">
+                                        Job Number <i class="bi bi-arrow-down-up"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortProjects('customer_name')">
+                                        Customer Name <i class="bi bi-arrow-down-up"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortProjects('project_description')">
+                                        Job Description <i class="bi bi-arrow-down-up"></i>
+                                    </th>
+                                    <th class="text-end sortable" onclick="sortProjects('budget_hours')">
+                                        Budget Hrs <i class="bi bi-arrow-down-up"></i>
+                                    </th>
+                                    <th class="text-end sortable" onclick="sortProjects('hours_used')">
+                                        Used Hrs <i class="bi bi-arrow-down-up"></i>
+                                    </th>
+                                    <th class="text-end sortable" onclick="sortProjects('hours_remaining')">
+                                        Remaining <i class="bi bi-arrow-down-up"></i>
+                                    </th>
+                                    <th class="sortable" onclick="sortProjects('percent_used')">
+                                        Budget Used <i class="bi bi-arrow-down-up"></i>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="activeProjectsBody">
+                                <tr><td colspan="7" class="text-center p-3">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Hours by Task (MOVED DOWN - now appears second) -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Project Hours by Task</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Task Code</th>
+                                    <th>Task Name</th>
+                                    <th class="text-end">Hours</th>
+                                </tr>
+                            </thead>
+                            <tbody id="taskHoursBody">
+                                <tr><td colspan="3" class="text-center">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historical Utilization Chart -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-graph-up"></i> Historical Utilization Over Time</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="utilizationChart" height="80"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="statusMessage" class="mt-3"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// Global variables for sorting
+let projectsData = [];
+let sortColumn = null;
+let sortDirection = 'asc';
+let utilizationChart = null;
+
+// Set default dates - start from 01/01/2026, end at today
+const today = new Date();
+const startDate2026 = new Date(2026, 0, 1); // January 1, 2026
+document.getElementById('startDate').valueAsDate = startDate2026;
+document.getElementById('endDate').valueAsDate = today;
+
+// Load on page load
+document.addEventListener('DOMContentLoaded', () => {
+    loadMetrics();
+    loadUpcomingHolidays();
+    loadUtilizationHistory();
+});
+
+// Format date helper function
+function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const [year, month, day] = dateStr.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('en-US', {month: '2-digit', day: '2-digit', year: 'numeric'});
+}
+
+// Load upcoming holidays (shows 2 holidays)
+async function loadUpcomingHolidays() {
+    try {
+        const response = await fetch('/api/dashboard/upcoming-holidays');
+        const holidays = await response.json();
+        
+        const container = document.getElementById('upcomingHolidays');
+        
+        if (holidays.length === 0) {
+            container.innerHTML = '<small class="text-muted">No upcoming holidays</small>';
+            return;
+        }
+        
+        container.innerHTML = holidays.map(h => `
+            <div class="holiday-list-item">
+                <div class="holiday-list-date">${formatDate(h.holiday_date)}</div>
+                <div class="holiday-list-name">${h.holiday_name}</div>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading holidays:', error);
+        document.getElementById('upcomingHolidays').innerHTML = 
+            '<small class="text-danger">Error loading</small>';
+    }
+}
+
+// Load historical utilization data for chart
+async function loadUtilizationHistory() {
+    try {
+        const response = await fetch('/api/dashboard/utilization-history');
+        const data = await response.json();
+        
+        const ctx = document.getElementById('utilizationChart').getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (utilizationChart) {
+            utilizationChart.destroy();
+        }
+        
+        utilizationChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels || [],
+                datasets: [
+                    {
+                        label: 'Project Utilization %',
+                        data: data.project_utilization || [],
+                        borderColor: '#198754',
+                        backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    },
+                    {
+                        label: 'Admin Utilization %',
+                        data: data.admin_utilization || [],
+                        borderColor: '#0dcaf0',
+                        backgroundColor: 'rgba(13, 202, 240, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '%';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Utilization %'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Week'
+                        }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error loading utilization history:', error);
+    }
+}
+
+// Sort projects table
+function sortProjects(column) {
+    if (sortColumn === column) {
+        sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        sortColumn = column;
+        sortDirection = 'asc';
+    }
+    
+    projectsData.sort((a, b) => {
+        let aVal = a[column];
+        let bVal = b[column];
+        
+        // Handle numeric columns
+        if (['budget_hours', 'hours_used', 'hours_remaining', 'percent_used'].includes(column)) {
+            aVal = parseFloat(aVal) || 0;
+            bVal = parseFloat(bVal) || 0;
+        } else if (typeof aVal === 'string') {
+            aVal = (aVal || '').toLowerCase();
+            bVal = (bVal || '').toLowerCase();
+        }
+        
+        if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
+        return 0;
+    });
+    
+    displayActiveProjects(projectsData);
+}
+
+async function loadMetrics() {
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    if (!startDate || !endDate) {
+        showStatus('Please select both start and end dates', 'warning');
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/dashboard/metrics?start_date=${startDate}&end_date=${endDate}`);
+        const data = await response.json();
+
+        if (data.metrics) {
+            displayMetrics(data.metrics);
+        }
+        if (data.project_hours_by_task) {
+            displayTaskHours(data.project_hours_by_task);
+        }
+        if (data.active_projects) {
+            projectsData = data.active_projects;
+            displayActiveProjects(projectsData);
+        }
+    } catch (error) {
+        showStatus('Error loading dashboard metrics: ' + error.message, 'danger');
+    }
+}
+
+function displayMetrics(metrics) {
+    document.getElementById('totalHours').textContent = metrics.total_hours.toFixed(1);
+    document.getElementById('projectHours').textContent = metrics.project_hours.toFixed(1);
+    document.getElementById('adminHours').textContent = metrics.admin_hours.toFixed(1);
+    document.getElementById('ptoHours').textContent = metrics.pto_hours.toFixed(1);
+    document.getElementById('holidayHours').textContent = metrics.holiday_hours.toFixed(1);
+    
+    document.getElementById('weeks').textContent = metrics.weeks.toFixed(1);
+    document.getElementById('availableHours').textContent = metrics.available_hours.toFixed(0);
+    document.getElementById('projectUtil').textContent = metrics.project_utilization.toFixed(1);
+    document.getElementById('adminUtil').textContent = metrics.admin_utilization.toFixed(1);
+}
+
+function displayTaskHours(tasks) {
+    const tbody = document.getElementById('taskHoursBody');
+    
+    if (!tasks || tasks.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No project hours logged</td></tr>';
+        return;
+    }
+
+    const total = tasks.reduce((sum, t) => sum + parseFloat(t.hours || 0), 0);
+
+    tbody.innerHTML = tasks.map(task => `
+        <tr>
+            <td><strong>${task.job_task_code || ''}</strong></td>
+            <td>${task.task_name || ''}</td>
+            <td class="text-end"><strong>${parseFloat(task.hours || 0).toFixed(1)}</strong></td>
+        </tr>
+    `).join('') + `
+        <tr class="table-secondary">
+            <td colspan="2"><strong>Total Project Hours</strong></td>
+            <td class="text-end"><strong>${total.toFixed(1)}</strong></td>
+        </tr>
+    `;
+}
+
+function displayActiveProjects(projects) {
+    const tbody = document.getElementById('activeProjectsBody');
+    
+    if (!projects || projects.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted p-3">No active projects found</td></tr>';
+        return;
+    }
+
+    // Calculate totals
+    let totalBudget = 0;
+    let totalUsed = 0;
+    let totalRemaining = 0;
+
+    const rows = projects.map(p => {
+        const budget = parseFloat(p.budget_hours) || 0;
+        const used = parseFloat(p.hours_used) || 0;
+        const remaining = parseFloat(p.hours_remaining) || (budget - used);
+        const pct = parseFloat(p.percent_used) || 0;
+        
+        // Add to totals
+        totalBudget += budget;
+        totalUsed += used;
+        totalRemaining += remaining;
+        
+        // Determine progress bar color
+        const barColor = pct >= 100 ? '#dc3545' : pct >= 80 ? '#ffc107' : '#198754';
+        
+        // Style remaining hours based on status
+        const remainingClass = remaining < 0 
+            ? 'text-danger fw-bold' 
+            : remaining < budget * 0.2 
+                ? 'text-warning' 
+                : '';
+
+        return `
+            <tr>
+                <td><strong>${p.job_number || ''}</strong></td>
+                <td>${p.customer_name || ''}</td>
+                <td>${p.project_description || '<span class="text-muted fst-italic">—</span>'}</td>
+                <td class="text-end">${budget.toFixed(1)}</td>
+                <td class="text-end">${used.toFixed(1)}</td>
+                <td class="text-end ${remainingClass}">${remaining.toFixed(1)}</td>
+                <td>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" 
+                                 style="width: ${Math.min(pct, 100)}%; background-color: ${barColor};">
+                            </div>
+                        </div>
+                        <small style="min-width: 40px; text-align: right;">
+                            <strong>${pct.toFixed(0)}%</strong>
+                        </small>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    // Add totals row
+    const totalsRow = `
+        <tr class="totals-row">
+            <td colspan="3" class="text-end">TOTALS:</td>
+            <td class="text-end">${totalBudget.toFixed(1)}</td>
+            <td class="text-end">${totalUsed.toFixed(1)}</td>
+            <td class="text-end">${totalRemaining.toFixed(1)}</td>
+            <td></td>
+        </tr>
+    `;
+
+    tbody.innerHTML = rows + totalsRow;
+}
+
+function showStatus(message, type) {
+    const div = document.getElementById('statusMessage');
+    div.innerHTML = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    setTimeout(() => { div.innerHTML = ''; }, 5000);
+}
+</script>
+{% endblock %}
