@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+{% block title %}System Backup - Time Tracker{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2><i class="bi bi-database"></i> System Backup</h2>
+    <p class="text-muted">Create, download, and restore full system backups</p>
+
+    <!-- Alert Area -->
+    <div id="alertArea"></div>
+
+    <!-- Backup Actions -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="bi bi-cloud-arrow-up"></i> Create New Backup</h5>
+        </div>
+        <div class="card-body">
+            <p>Create a complete backup of the Time Tracker system including:</p>
+            <ul>
+                <li><strong>Database:</strong> All users, projects, time entries, and configuration</li>
+                <li><strong>Application Files:</strong> Source code, templates, and static files</li>
+                <li><strong>Restore Script:</strong> Automated restoration tool</li>
+            </ul>
+            <p class="text-muted mb-3">
+                <small>
+                    <i class="bi bi-info-circle"></i>
+                    Backups are stored in <code>/opt/timetracker/backups/</code> and can be downloaded for off-site storage.
+                </small>
+            </p>
+            <button id="createBackupBtn" class="btn btn-primary btn-lg">
+                <i class="bi bi-plus-circle"></i> Create Full Backup
+            </button>
+            <div id="createBackupSpinner" class="spinner-border spinner-border-sm ms-2 d-none" role="status">
+                <span class="visually-hidden">Creating backup...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Existing Backups List -->
+    <div class="card">
+        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="bi bi-archive"></i> Available Backups</h5>
+            <button id="refreshBackupsBtn" class="btn btn-sm btn-light">
+                <i class="bi bi-arrow-clockwise"></i> Refresh
+            </button>
+        </div>
+        <div class="card-body">
+            <div id="loadingSpinner" class="text-center d-none">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading backups...</p>
+            </div>
+
+            <div id="backupsList">
+                <!-- Backups will be loaded here via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Restore Instructions -->
+    <div class="card mt-4">
+        <div class="card-header bg-warning">
+            <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Restore Instructions</h5>
+        </div>
+        <div class="card-body">
+            <p><strong>To restore a backup:</strong></p>
+            <ol>
+                <li>Download the backup file (.tar.gz) to your local machine</li>
+                <li>Transfer the file to the target server</li>
+                <li>Extract the backup:
+                    <pre class="bg-light p-2 mt-2"><code>tar -xzf timetracker_backup_YYYYMMDD_HHMMSS.tar.gz</code></pre>
+                </li>
+                <li>Run the restore script:
+                    <pre class="bg-light p-2"><code>cd timetracker_backup_YYYYMMDD_HHMMSS
+sudo bash restore.sh</code></pre>
+                </li>
+            </ol>
+            <p class="text-danger">
+                <strong><i class="bi bi-exclamation-circle"></i> Warning:</strong>
+                Restoring a backup will <strong>overwrite all current data</strong> in the database and application files.
+                Always create a backup of the current system before restoring!
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+// Show alert message
+function showAlert(message, type = 'info') {
+    const alertDiv = document.getElementById('alertArea');
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show`;
+    alert.role = 'alert';
+    alert.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    alertDiv.appendChild(alert);
+
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        alert.remove();
+    }, 5000);
+}
+
+// Format file size
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+}
+
+// Format date
+function formatDate(isoString) {
+    const date = new Date(isoString);
+    return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}
+
+// Load backups list
+async function loadBackups() {
+    const spinner = document.getElementById('loadingSpinner');
+    const backupsList = document.getElementById('backupsList');
+
+    spinner.classList.remove('d-none');
+    backupsList.innerHTML = '';
+
+    try {
+        const response = await fetch('/api/admin/list-full-backups');
+        if (!response.ok) {
+            throw new Error('Failed to load backups');
+        }
+
+        const backups = await response.json();
+        spinner.classList.add('d-none');
+
+        if (backups.length === 0) {
+            backupsList.innerHTML = `
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> No backups found. Create your first backup above.
+                </div>
+            `;
+            return;
+        }
+
+        // Create table of backups
+        let html = `
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Filename</th>
+                            <th>Created</th>
+                            <th>Size</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        backups.forEach(backup => {
+            html += `
+                <tr>
+                    <td>
+                        <i class="bi bi-file-earmark-zip"></i>
+                        <code>${backup.filename}</code>
+                    </td>
+                    <td>${formatDate(backup.created)}</td>
+                    <td>${formatFileSize(backup.size)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-success" onclick="downloadBackup('${backup.filename}')">
+                            <i class="bi bi-download"></i> Download
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteBackup('${backup.filename}')">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        backupsList.innerHTML = html;
+
+    } catch (error) {
+        spinner.classList.add('d-none');
+        backupsList.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-circle"></i> Error loading backups: ${error.message}
+            </div>
+        `;
+    }
+}
+
+// Create new backup
+async function createBackup() {
+    const btn = document.getElementById('createBackupBtn');
+    const spinner = document.getElementById('createBackupSpinner');
+
+    btn.disabled = true;
+    spinner.classList.remove('d-none');
+
+    try {
+        const response = await fetch('/api/admin/create-full-backup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            showAlert(`<i class="bi bi-check-circle"></i> Backup created successfully: <code>${result.filename}</code>`, 'success');
+            loadBackups(); // Refresh the list
+        } else {
+            throw new Error(result.error || 'Failed to create backup');
+        }
+
+    } catch (error) {
+        showAlert(`<i class="bi bi-exclamation-circle"></i> Error creating backup: ${error.message}`, 'danger');
+    } finally {
+        btn.disabled = false;
+        spinner.classList.add('d-none');
+    }
+}
+
+// Download backup
+function downloadBackup(filename) {
+    window.location.href = `/api/admin/download-backup/${filename}`;
+    showAlert(`<i class="bi bi-download"></i> Downloading ${filename}...`, 'info');
+}
+
+// Delete backup
+async function deleteBackup(filename) {
+    if (!confirm(`Are you sure you want to delete ${filename}?\n\nThis action cannot be undone.`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/admin/delete-backup/${filename}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            showAlert(`<i class="bi bi-check-circle"></i> ${result.message}`, 'success');
+            loadBackups(); // Refresh the list
+        } else {
+            throw new Error(result.error || 'Failed to delete backup');
+        }
+
+    } catch (error) {
+        showAlert(`<i class="bi bi-exclamation-circle"></i> Error deleting backup: ${error.message}`, 'danger');
+    }
+}
+
+// Event listeners
+document.getElementById('createBackupBtn').addEventListener('click', createBackup);
+document.getElementById('refreshBackupsBtn').addEventListener('click', loadBackups);
+
+// Load backups on page load
+document.addEventListener('DOMContentLoaded', loadBackups);
+</script>
+{% endblock %}
