@@ -48,6 +48,23 @@ class AdminHelperClient:
         }
         
         try:
+            # Check if queue directories exist
+            if not self.QUEUE_DIR.exists():
+                return {
+                    'success': False,
+                    'error': f'Admin helper queue directory does not exist: {self.QUEUE_DIR}. '
+                             'The admin helper service may not be running. '
+                             'Try: sudo systemctl start timetracker-admin-helper'
+                }
+
+            if not self.RESPONSE_DIR.exists():
+                return {
+                    'success': False,
+                    'error': f'Admin helper response directory does not exist: {self.RESPONSE_DIR}. '
+                             'The admin helper service may not be running. '
+                             'Try: sudo systemctl start timetracker-admin-helper'
+                }
+
             # Write request to queue
             with open(request_file, 'w') as f:
                 json.dump(request_data, f)

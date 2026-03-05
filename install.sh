@@ -171,7 +171,23 @@ echo "Installing privileged admin helper for server configuration..."
 if [ -f /opt/timetracker/install_admin_helper.sh ]; then
     bash /opt/timetracker/install_admin_helper.sh
     echo ""
-    echo "Admin helper service installed successfully!"
+
+    # Wait for service to create directories
+    echo "Waiting for admin helper service to create queue directories..."
+    sleep 3
+
+    # Verify directories exist
+    if [ -d "/var/run/timetracker/requests" ] && [ -d "/var/run/timetracker/responses" ]; then
+        echo "  ✓ Queue directories verified: /var/run/timetracker/"
+        echo "Admin helper service installed successfully!"
+    else
+        echo "  ⚠ WARNING: Queue directories not found!"
+        echo "  The admin helper service may need more time to initialize."
+        echo "  Server config features may not work until directories are created."
+        echo ""
+        echo "  If issues persist, restart the admin helper service:"
+        echo "    sudo systemctl restart timetracker-admin-helper"
+    fi
 else
     echo "Warning: install_admin_helper.sh not found, skipping admin helper installation."
     echo "Server configuration features (timezone/network/NTP) may not work."
