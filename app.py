@@ -17,7 +17,15 @@ import csv
 import io
 import re
 import shlex
-from admin_helper_client import AdminHelperClient
+import subprocess
+
+# Try to import admin helper client (optional - for privileged operations)
+try:
+    from admin_helper_client import AdminHelperClient
+    ADMIN_HELPER_AVAILABLE = True
+except ImportError:
+    ADMIN_HELPER_AVAILABLE = False
+    AdminHelperClient = None
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'change-this-secret-key-in-production')
@@ -1544,16 +1552,21 @@ def get_timezone():
 @login_required
 @admin_required
 def set_timezone():
-    """Set server timezone using admin helper service"""
+    """Set server timezone using admin helper service or sudo fallback"""
     timezone = request.json.get('timezone')
     try:
-        helper = AdminHelperClient()
-        result = helper.set_timezone(timezone)
-
-        if result.get('success'):
-            return jsonify(result)
+        if ADMIN_HELPER_AVAILABLE and AdminHelperClient:
+            # Use admin helper service (preferred method)
+            helper = AdminHelperClient()
+            result = helper.set_timezone(timezone)
+            if result.get('success'):
+                return jsonify(result)
+            else:
+                return jsonify(result), 500
         else:
-            return jsonify(result), 500
+            # Fallback to sudo method (requires sudoers configuration)
+            subprocess.run(['/usr/bin/sudo', '/usr/bin/timedatectl', 'set-timezone', timezone], check=True)
+            return jsonify({'success': True, 'message': f'Timezone set to {timezone}'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -1562,7 +1575,7 @@ def set_timezone():
 @login_required
 @admin_required
 def set_ntp_servers():
-    """Set custom NTP servers using admin helper service"""
+    """Set custom NTP servers using admin helper service or sudo fallback"""
     try:
         data = request.json
         ntp_server1 = data.get('ntp_server1', '').strip()
@@ -1575,14 +1588,31 @@ def set_ntp_servers():
         if ntp_server2:
             ntp_servers.append(ntp_server2)
 
-        helper = AdminHelperClient()
-        result = helper.set_ntp_servers(ntp_servers)
-
-        if result.get('success'):
-            return jsonify(result)
+        if ADMIN_HELPER_AVAILABLE and AdminHelperClient:
+            # Use admin helper service (preferred method)
+            helper = AdminHelperClient()
+            result = helper.set_ntp_servers(ntp_servers)
+            if result.get('success'):
+                return jsonify(result)
+            else:
+                return jsonify(result), 500
         else:
-            return jsonify(result), 500
+            # Fallback to sudo method (requires /usr/local/bin/update-ntp-config script)
+            ntp_config = ' '.join(ntp_servers)
+            proc = subprocess.Popen(
+                ['/usr/bin/sudo', '/usr/local/bin/update-ntp-config'],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            stdout, stderr = proc.communicate(input=ntp_config.encode(), timeout=10)
+            if proc.returncode == 0:
+                return jsonify({'success': True, 'message': f'NTP servers set to: {ntp_config}'})
+            else:
+                return jsonify({'error': f'Failed to set NTP servers: {stderr.decode()}'}), 500
 
+    except subprocess.TimeoutExpired:
+        return jsonify({'error': 'Timeout setting NTP servers'}), 500
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -1590,15 +1620,20 @@ def set_ntp_servers():
 @login_required
 @admin_required
 def sync_ntp():
-    """Enable NTP time synchronization using admin helper service"""
+    """Enable NTP time synchronization using admin helper service or sudo fallback"""
     try:
-        helper = AdminHelperClient()
-        result = helper.enable_ntp_sync()
-
-        if result.get('success'):
-            return jsonify(result)
+        if ADMIN_HELPER_AVAILABLE and AdminHelperClient:
+            # Use admin helper service (preferred method)
+            helper = AdminHelperClient()
+            result = helper.enable_ntp_sync()
+            if result.get('success'):
+                return jsonify(result)
+            else:
+                return jsonify(result), 500
         else:
-            return jsonify(result), 500
+            # Fallback to sudo method
+            subprocess.run(['/usr/bin/sudo', '/usr/bin/timedatectl', 'set-ntp', 'true'], check=True)
+            return jsonify({'success': True, 'message': 'NTP sync enabled'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
