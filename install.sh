@@ -163,6 +163,22 @@ ENV
 chown timetracker:timetracker /opt/timetracker/.env
 chmod 600 /opt/timetracker/.env
 
+# Step 8.5: Install Admin Helper Service (BEFORE starting timetracker)
+echo "[8.5/10] Installing Admin Helper Service..."
+echo "Installing privileged admin helper for server configuration..."
+
+# Install admin helper service (for timezone, network, and NTP configuration)
+if [ -f /opt/timetracker/install_admin_helper.sh ]; then
+    bash /opt/timetracker/install_admin_helper.sh
+    echo ""
+    echo "Admin helper service installed successfully!"
+else
+    echo "Warning: install_admin_helper.sh not found, skipping admin helper installation."
+    echo "Server configuration features (timezone/network/NTP) may not work."
+    echo "You can install it later by running: sudo bash /opt/timetracker/install_admin_helper.sh"
+fi
+echo ""
+
 # Step 9: Create systemd service
 echo "[9/10] Creating systemd service..."
 cat > /etc/systemd/system/timetracker.service << SERVICE
@@ -258,24 +274,6 @@ chown timetracker:timetracker /opt/timetracker/backup.sh
 
 # Setup daily backup cron job
 (crontab -u timetracker -l 2>/dev/null; echo "0 2 * * * /opt/timetracker/backup.sh >> /opt/timetracker/backup.log 2>&1") | crontab -u timetracker -
-
-echo ""
-echo "========================================="
-echo " Installing Admin Helper Service"
-echo "========================================="
-echo ""
-echo "Installing privileged admin helper for server configuration..."
-
-# Install admin helper service (for timezone and NTP configuration)
-if [ -f /opt/timetracker/install_admin_helper.sh ]; then
-    bash /opt/timetracker/install_admin_helper.sh
-    echo ""
-    echo "Admin helper service installed successfully!"
-else
-    echo "Warning: install_admin_helper.sh not found, skipping admin helper installation."
-    echo "Server configuration features (timezone/NTP) may not work."
-    echo "You can install it later by running: sudo bash /opt/timetracker/install_admin_helper.sh"
-fi
 
 echo ""
 echo "========================================="
