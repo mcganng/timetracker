@@ -14,8 +14,8 @@ from pathlib import Path
 class AdminHelperClient:
     """Client for communicating with the admin helper service"""
 
-    QUEUE_DIR = Path("/opt/timetracker/queue/requests")
-    RESPONSE_DIR = Path("/opt/timetracker/queue/responses")
+    QUEUE_DIR = Path("/var/run/timetracker/requests")
+    RESPONSE_DIR = Path("/var/run/timetracker/responses")
     TIMEOUT = 10  # seconds
     
     def __init__(self):
