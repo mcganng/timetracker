@@ -27,8 +27,8 @@ from pathlib import Path
 from datetime import datetime
 
 # Configuration
-QUEUE_DIR = Path("/opt/timetracker/queue/requests")
-RESPONSE_DIR = Path("/opt/timetracker/queue/responses")
+QUEUE_DIR = Path("/var/run/timetracker/requests")
+RESPONSE_DIR = Path("/var/run/timetracker/responses")
 LOG_FILE = "/var/log/timetracker-admin-helper.log"
 
 # Set up logging
@@ -180,21 +180,157 @@ def enable_ntp_sync():
         }
 
 
+def set_network_config(ip_address, subnet_mask, gateway, dns1, dns2='', interface='ens160'):
+    """Set network configuration using netplan"""
+    import ipaddress as ipaddr
+
+    try:
+        # Validate IP addresses
+        ipaddr.ip_address(ip_address)
+        ipaddr.ip_address(gateway)
+        ipaddr.ip_address(dns1)
+        if dns2:
+            ipaddr.ip_address(dns2)
+    except ValueError as e:
+        error_msg = f'Invalid IP address: {str(e)}'
+        logger.error(error_msg)
+        return {
+            'success': False,
+            'error': error_msg
+        }
+
+    # Convert subnet mask to CIDR if needed
+    if '.' in subnet_mask:
+        try:
+            network = ipaddr.IPv4Network(f'0.0.0.0/{subnet_mask}', strict=False)
+            cidr = network.prefixlen
+        except:
+            error_msg = 'Invalid subnet mask'
+            logger.error(error_msg)
+            return {
+                'success': False,
+                'error': error_msg
+            }
+    else:
+        cidr = int(subnet_mask)
+        if cidr < 0 or cidr > 32:
+            error_msg = f'Invalid CIDR notation: {cidr}'
+            logger.error(error_msg)
+            return {
+                'success': False,
+                'error': error_msg
+            }
+
+    # Build DNS nameservers list
+    dns_list = [dns1]
+    if dns2:
+        dns_list.append(dns2)
+    dns_yaml = ', '.join(dns_list)
+
+    # Generate netplan YAML
+    yaml_content = f"""network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    {interface}:
+      addresses:
+        - {ip_address}/{cidr}
+      routes:
+        - to: default
+          via: {gateway}
+      nameservers:
+        addresses: [{dns_yaml}]
+"""
+
+    config_file = "/etc/netplan/50-cloud-init.yaml"
+    backup_dir = "/opt/timetracker/netplan-backups"
+
+    try:
+        # Create backup directory
+        os.makedirs(backup_dir, exist_ok=True)
+
+        # Backup existing config
+        if os.path.exists(config_file):
+            backup_file = f"{backup_dir}/backup-{datetime.now().strftime('%Y%m%d-%H%M%S')}.yaml"
+            subprocess.run(['cp', config_file, backup_file], check=True)
+            logger.info(f"Backed up existing config to {backup_file}")
+
+        # Write new configuration
+        with open(config_file, 'w') as f:
+            f.write(yaml_content)
+        os.chmod(config_file, 0o600)
+        logger.info(f"Wrote new configuration to {config_file}")
+
+        # Validate netplan syntax
+        result = subprocess.run(
+            ['/usr/sbin/netplan', 'generate'],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        logger.info("Netplan syntax validation passed")
+
+        # Apply netplan
+        result = subprocess.run(
+            ['/usr/sbin/netplan', 'apply'],
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=True
+        )
+        logger.info("Netplan applied successfully")
+
+        return {
+            'success': True,
+            'message': 'Network settings applied successfully'
+        }
+
+    except subprocess.TimeoutExpired:
+        logger.warning("Netplan apply timed out (this is normal if network changed)")
+        return {
+            'success': True,
+            'message': 'Network settings applied (connection may have changed)'
+        }
+    except subprocess.CalledProcessError as e:
+        error_msg = f"Failed to apply netplan: {e.stderr if e.stderr else str(e)}"
+        logger.error(error_msg)
+        return {
+            'success': False,
+            'error': error_msg
+        }
+    except Exception as e:
+        error_msg = f"Unexpected error: {str(e)}"
+        logger.error(error_msg)
+        return {
+            'success': False,
+            'error': error_msg
+        }
+
+
 def process_request(request_data):
     """Process a single request"""
     action = request_data.get('action')
-    
+
     if action == 'set_timezone':
         timezone = request_data.get('timezone')
         return set_timezone(timezone)
-    
+
     elif action == 'set_ntp_servers':
         servers = request_data.get('servers', [])
         return set_ntp_servers(servers)
-    
+
     elif action == 'enable_ntp':
         return enable_ntp_sync()
-    
+
+    elif action == 'set_network_config':
+        ip_address = request_data.get('ip_address')
+        subnet_mask = request_data.get('subnet_mask')
+        gateway = request_data.get('gateway')
+        dns1 = request_data.get('dns1')
+        dns2 = request_data.get('dns2', '')
+        interface = request_data.get('interface', 'ens160')
+        return set_network_config(ip_address, subnet_mask, gateway, dns1, dns2, interface)
+
     else:
         return {
             'success': False,

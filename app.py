@@ -2263,7 +2263,7 @@ def get_network_config():
 @login_required
 @admin_required
 def set_network_config():
-    """Set network configuration using helper script"""
+    """Set network configuration using admin helper service"""
     import sys
     try:
         data = request.json
@@ -2272,102 +2272,48 @@ def set_network_config():
         gateway = data.get('gateway')
         dns1 = data.get('dns1')
         dns2 = data.get('dns2', '')
-        
+
         print(f"[NETWORK] Received request: IP={ip_address}, Subnet={subnet_mask}, GW={gateway}, DNS1={dns1}, DNS2={dns2}", file=sys.stderr)
-        
+
         if not all([ip_address, subnet_mask, gateway, dns1]):
             print(f"[NETWORK] Missing required fields", file=sys.stderr)
             return jsonify({'error': 'Missing required fields'}), 400
-        
-        # Validate IP addresses
-        try:
-            ipaddress.ip_address(ip_address)
-            ipaddress.ip_address(gateway)
-            ipaddress.ip_address(dns1)
-            if dns2:
-                ipaddress.ip_address(dns2)
-        except ValueError as e:
-            print(f"[NETWORK] Invalid IP: {e}", file=sys.stderr)
-            return jsonify({'error': f'Invalid IP address: {str(e)}'}), 400
-        
-        # Convert subnet mask to CIDR
-        if '.' in subnet_mask:
-            try:
-                network = ipaddress.IPv4Network(f'0.0.0.0/{subnet_mask}', strict=False)
-                cidr = network.prefixlen
-            except:
-                print(f"[NETWORK] Invalid subnet mask", file=sys.stderr)
-                return jsonify({'error': 'Invalid subnet mask'}), 400
-        else:
-            cidr = int(subnet_mask)
-            if cidr < 0 or cidr > 32:
-                print(f"[NETWORK] Invalid CIDR: {cidr}", file=sys.stderr)
-                return jsonify({'error': 'Invalid CIDR notation'}), 400
-        
+
         # Find network interface
-        result = subprocess.run(['/usr/sbin/ip', 'route', 'show', 'default'], 
+        result = subprocess.run(['/usr/sbin/ip', 'route', 'show', 'default'],
                               capture_output=True, text=True)
         interface = 'ens160'
         if result.stdout:
             parts = result.stdout.split()
             if 'dev' in parts:
                 interface = parts[parts.index('dev') + 1]
-        
+
         print(f"[NETWORK] Using interface: {interface}", file=sys.stderr)
-        
-        # Build DNS nameservers list
-        nameservers = [dns1]
-        if dns2:
-            nameservers.append(dns2)
-        
-        # Create netplan configuration
-        netplan_config = {
-            'network': {
-                'version': 2,
-                'ethernets': {
-                    interface: {
-                        'addresses': [f'{ip_address}/{cidr}'],
-                        'routes': [{'to': 'default', 'via': gateway}],
-                        'nameservers': {'addresses': nameservers}
-                    }
-                }
-            }
-        }
-        
-        yaml_content = yaml.dump(netplan_config, default_flow_style=False)
-        print(f"[NETWORK] Generated YAML config:\n{yaml_content}", file=sys.stderr)
-        
-        # Write configuration using helper script
-        print(f"[NETWORK] Calling helper script...", file=sys.stderr)
-        proc = subprocess.Popen(
-            ['/usr/bin/sudo', '/usr/local/bin/update-netplan-config'],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
+
+        # Use admin helper service to set network config
+        from admin_helper_client import AdminHelperClient
+        helper = AdminHelperClient()
+
+        print(f"[NETWORK] Calling admin helper service...", file=sys.stderr)
+        result = helper.set_network_config(
+            ip_address=ip_address,
+            subnet_mask=subnet_mask,
+            gateway=gateway,
+            dns1=dns1,
+            dns2=dns2,
+            interface=interface
         )
-        stdout, stderr = proc.communicate(input=yaml_content.encode(), timeout=15)
-        
-        print(f"[NETWORK] Helper script stdout: {stdout.decode()}", file=sys.stderr)
-        print(f"[NETWORK] Helper script stderr: {stderr.decode()}", file=sys.stderr)
-        print(f"[NETWORK] Helper script return code: {proc.returncode}", file=sys.stderr)
-        
-        if proc.returncode == 0:
+
+        print(f"[NETWORK] Helper response: {result}", file=sys.stderr)
+
+        if result.get('success'):
             print(f"[NETWORK] Success!", file=sys.stderr)
-            return jsonify({
-                'success': True,
-                'message': 'Network settings applied successfully'
-            })
+            return jsonify(result)
         else:
-            error_msg = f'Failed to apply config: {stderr.decode()}'
+            error_msg = result.get('error', 'Unknown error')
             print(f"[NETWORK] Error: {error_msg}", file=sys.stderr)
-            return jsonify({'error': error_msg}), 500
-            
-    except subprocess.TimeoutExpired:
-        print(f"[NETWORK] Timeout!", file=sys.stderr)
-        return jsonify({
-            'success': True,
-            'message': 'Network settings applied (timeout waiting for confirmation)'
-        })
+            return jsonify(result), 500
+
     except Exception as e:
         import traceback
         error_msg = str(e)

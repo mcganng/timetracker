@@ -117,23 +117,48 @@ class AdminHelperClient:
     def enable_ntp_sync(self):
         """
         Enable NTP time synchronization
-        
+
         Returns:
             dict: {'success': bool, 'message': str} or {'success': False, 'error': str}
         """
         return self._send_request('enable_ntp')
-    
+
+    def set_network_config(self, ip_address, subnet_mask, gateway, dns1, dns2='', interface='ens160'):
+        """
+        Set network configuration
+
+        Args:
+            ip_address: IP address for the interface
+            subnet_mask: Subnet mask (dotted notation or CIDR prefix)
+            gateway: Default gateway IP address
+            dns1: Primary DNS server
+            dns2: Secondary DNS server (optional)
+            interface: Network interface name (default: ens160)
+
+        Returns:
+            dict: {'success': bool, 'message': str} or {'success': False, 'error': str}
+        """
+        return self._send_request(
+            'set_network_config',
+            ip_address=ip_address,
+            subnet_mask=subnet_mask,
+            gateway=gateway,
+            dns1=dns1,
+            dns2=dns2,
+            interface=interface
+        )
+
     def is_helper_running(self):
         """
         Check if the helper service is running
-        
+
         Returns:
             bool: True if helper is running and responsive
         """
         # Try a simple request with short timeout
         old_timeout = self.TIMEOUT
         self.TIMEOUT = 2
-        
+
         try:
             # This will create a request and wait for response
             # If helper is running, it should respond quickly
