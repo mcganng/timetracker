@@ -25,50 +25,42 @@ Error loading users: column "hire_date" does not exist
 
 ## Remaining Issues (Require Additional Configuration)
 
-### 3. Server Configuration - Timezone/NTP Updates
-**Problem:** Server Configuration page cannot update timezone or NTP servers
+### 3. Server Configuration - Timezone/NTP Updates ⚠️ CRITICAL
+**Problem:** Server Configuration page cannot update timezone or NTP servers on fresh git installs
 
-**Root Cause:** The `timetracker` user needs sudo permissions to run system commands:
-- `/usr/bin/timedatectl` (for timezone changes)
-- `/usr/local/bin/update-ntp-config` (for NTP server updates)
-
-**Solution Required:**
-
-1. Create the NTP helper script:
-```bash
-sudo tee /usr/local/bin/update-ntp-config > /dev/null << 'EOF'
-#!/bin/bash
-# NTP Configuration Helper for Time Tracker
-# This script updates systemd-timesyncd NTP servers
-
-read -r NTP_SERVERS
-
-if [ -z "$NTP_SERVERS" ]; then
-    echo "Error: No NTP servers provided"
-    exit 1
-fi
-
-# Backup current config
-cp /etc/systemd/timesyncd.conf /etc/systemd/timesyncd.conf.backup.$(date +%Y%m%d_%H%M%S)
-
-# Update NTP configuration
-cat > /etc/systemd/timesyncd.conf << CONF
-[Time]
-NTP=$NTP_SERVERS
-FallbackNTP=time.cloudflare.com time.google.com
-CONF
-
-# Restart timesyncd
-systemctl restart systemd-timesyncd
-
-echo "NTP servers updated to: $NTP_SERVERS"
-exit 0
-EOF
-
-sudo chmod +x /usr/local/bin/update-ntp-config
+**Symptoms:**
+```
+sudo: The "no new privileges" flag is set, which prevents sudo from running as root.
+sudo: If sudo is running in a container, you may need to adjust the container configuration to disable the flag.
 ```
 
-2. Configure sudo permissions:
+**Root Causes:**
+1. **Typo in systemd service file:** Line 18 has `NoNewPrivileges=fasle` (should be `false`)
+2. **Missing sudoers configuration:** `/etc/sudoers.d/timetracker` file doesn't exist
+3. The `timetracker` user needs sudo permissions to run system commands:
+   - `/usr/bin/timedatectl` (for timezone changes)
+   - `/usr/local/bin/update-ntp-config` (for NTP server updates)
+
+**Quick Fix:**
+
+Run the automated fix script:
+```bash
+sudo /opt/timetracker/fix_server_config.sh
+```
+
+This script will:
+- Create `/etc/sudoers.d/timetracker` with proper permissions
+- Fix the `NoNewPrivileges` typo in the systemd service file
+- Reload systemd and restart the service
+
+**Manual Fix (if needed):**
+
+1. Fix the systemd service file typo:
+```bash
+sudo sed -i 's/NoNewPrivileges=fasle/NoNewPrivileges=false/' /etc/systemd/system/timetracker.service
+```
+
+2. Create sudoers configuration:
 ```bash
 sudo tee /etc/sudoers.d/timetracker > /dev/null << 'EOF'
 # Allow timetracker user to run specific system commands without password
@@ -79,12 +71,29 @@ EOF
 sudo chmod 0440 /etc/sudoers.d/timetracker
 ```
 
-3. Verify permissions:
+3. Reload and restart:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl restart timetracker
+```
+
+4. Verify permissions:
 ```bash
 sudo -u timetracker sudo -l
 ```
 
-**Status:** Requires manual server configuration
+**Testing:**
+```bash
+# Test timezone command
+sudo -u timetracker sudo /usr/bin/timedatectl list-timezones | head -5
+
+# Test NTP configuration
+echo 'time.google.com' | sudo -u timetracker sudo /usr/local/bin/update-ntp-config
+```
+
+**Status:** Fixed by running `fix_server_config.sh` after installation
+
+**Reference:** See [SERVER_CONFIG_SETUP.md](SERVER_CONFIG_SETUP.md) for detailed documentation
 
 ### 4. System Backup Page - Internal Server Error
 **Problem:** System Backup page shows "Internal Server Error"
@@ -103,8 +112,7 @@ sudo -u timetracker sudo -l
 
 After running the install script on a fresh server, complete these additional steps:
 
-- [ ] Configure sudo permissions for timetracker user (see issue #3)
-- [ ] Create NTP helper script (see issue #3)
+- [ ] **Run server config fix:** `sudo /opt/timetracker/fix_server_config.sh` (see issue #3)
 - [ ] Verify timezone changes work: Test in Server Configuration page
 - [ ] Verify NTP updates work: Test in Server Configuration page
 - [ ] Decide on System Backup feature: Create template or remove route
