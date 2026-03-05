@@ -1,0 +1,28 @@
+[Unit]
+Description=Time Tracker Admin Helper Service
+Documentation=https://github.com/yourusername/timetracker
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/local/bin/timetracker-admin-helper
+Restart=always
+RestartSec=10
+
+# Run as root (required for system configuration)
+User=root
+Group=root
+
+# Security settings
+NoNewPrivileges=false
+PrivateTmp=true
+ProtectSystem=false
+ProtectHome=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=timetracker-admin-helper
+
+[Install]
+WantedBy=multi-user.target
