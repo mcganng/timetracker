@@ -253,6 +253,24 @@ chown timetracker:timetracker /opt/timetracker/backup.sh
 
 echo ""
 echo "========================================="
+echo " Installing Admin Helper Service"
+echo "========================================="
+echo ""
+echo "Installing privileged admin helper for server configuration..."
+
+# Install admin helper service (for timezone and NTP configuration)
+if [ -f /opt/timetracker/install_admin_helper.sh ]; then
+    bash /opt/timetracker/install_admin_helper.sh
+    echo ""
+    echo "Admin helper service installed successfully!"
+else
+    echo "Warning: install_admin_helper.sh not found, skipping admin helper installation."
+    echo "Server configuration features (timezone/NTP) may not work."
+    echo "You can install it later by running: sudo bash /opt/timetracker/install_admin_helper.sh"
+fi
+
+echo ""
+echo "========================================="
 echo " Installation Complete!"
 echo "========================================="
 echo ""
@@ -267,10 +285,12 @@ echo "  3. Test backup script:"
 echo "     sudo -u timetracker /opt/timetracker/backup.sh"
 echo ""
 echo "Useful commands:"
-echo "  Check status:    sudo systemctl status timetracker"
-echo "  View logs:       sudo journalctl -u timetracker -f"
-echo "  Restart app:     sudo systemctl restart timetracker"
-echo "  Backup database: sudo -u timetracker /opt/timetracker/backup.sh"
+echo "  Check app status:      sudo systemctl status timetracker"
+echo "  Check helper status:   sudo systemctl status timetracker-admin-helper"
+echo "  View app logs:         sudo journalctl -u timetracker -f"
+echo "  View helper logs:      sudo journalctl -u timetracker-admin-helper -f"
+echo "  Restart app:           sudo systemctl restart timetracker"
+echo "  Backup database:       sudo -u timetracker /opt/timetracker/backup.sh"
 echo ""
 echo "Database credentials:"
 echo "  Database: timetracker"
