@@ -154,16 +154,38 @@
         <div class="col-xl col-lg-4 col-md-6 mb-3 mb-xl-0">
             <div class="card metric-card warning h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
                         <div>
                             <h6 class="text-muted mb-1">PTO Hours</h6>
-                            <h3 class="mb-0" id="ptoHours">-</h3>
                         </div>
                         <i class="bi bi-calendar-x text-warning" style="font-size: 2rem;"></i>
                     </div>
-                    <small class="text-muted">
-                        Holiday: <span id="holidayHours">-</span> hrs
-                    </small>
+                    <div style="font-size: 0.85rem;">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">PTO Taken:</span>
+                            <strong id="ptoTaken">0.0 hrs</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Holiday Taken:</span>
+                            <strong id="holidayHours">0.0 hrs</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 pb-2" style="border-bottom: 1px solid rgba(0,0,0,0.1);">
+                            <span class="text-muted">PTO Remaining:</span>
+                            <strong class="text-success" id="ptoRemaining">-</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Total Allowed:</span>
+                            <strong id="ptoAllowed">-</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Resets On:</span>
+                            <strong id="ptoResetDate">-</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Days Until Reset:</span>
+                            <strong id="daysUntilReset">-</strong>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -470,9 +492,34 @@ function displayMetrics(metrics) {
     document.getElementById('totalHours').textContent = metrics.total_hours.toFixed(1);
     document.getElementById('projectHours').textContent = metrics.project_hours.toFixed(1);
     document.getElementById('adminHours').textContent = metrics.admin_hours.toFixed(1);
-    document.getElementById('ptoHours').textContent = metrics.pto_hours.toFixed(1);
-    document.getElementById('holidayHours').textContent = metrics.holiday_hours.toFixed(1);
-    
+
+    // PTO Information
+    document.getElementById('ptoTaken').textContent = metrics.pto_hours.toFixed(1) + ' hrs';
+    document.getElementById('holidayHours').textContent = metrics.holiday_hours.toFixed(1) + ' hrs';
+
+    // PTO Remaining and Reset Info
+    if (metrics.total_pto_allowed !== null && metrics.pto_remaining !== null) {
+        document.getElementById('ptoRemaining').textContent = metrics.pto_remaining.toFixed(1) + ' hrs';
+        document.getElementById('ptoAllowed').textContent = metrics.total_pto_allowed.toFixed(1) + ' hrs';
+    } else {
+        document.getElementById('ptoRemaining').textContent = 'N/A';
+        document.getElementById('ptoAllowed').textContent = 'N/A';
+    }
+
+    if (metrics.pto_reset_date) {
+        const resetDate = new Date(metrics.pto_reset_date);
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        document.getElementById('ptoResetDate').textContent = resetDate.toLocaleDateString('en-US', options);
+    } else {
+        document.getElementById('ptoResetDate').textContent = 'N/A';
+    }
+
+    if (metrics.days_until_reset !== null) {
+        document.getElementById('daysUntilReset').textContent = metrics.days_until_reset + ' days';
+    } else {
+        document.getElementById('daysUntilReset').textContent = 'N/A';
+    }
+
     document.getElementById('weeks').textContent = metrics.weeks.toFixed(1);
     document.getElementById('availableHours').textContent = metrics.available_hours.toFixed(0);
     document.getElementById('projectUtil').textContent = metrics.project_utilization.toFixed(1);
