@@ -20,9 +20,10 @@ class AdminHelperClient:
     
     def __init__(self):
         """Initialize the client"""
-        # Ensure directories exist
-        self.QUEUE_DIR.mkdir(parents=True, exist_ok=True)
-        self.RESPONSE_DIR.mkdir(parents=True, exist_ok=True)
+        # Note: Directories are created by the admin helper service
+        # The service runs as root and sets proper permissions
+        # The client (running as timetracker user) should NOT try to create them
+        pass
     
     def _send_request(self, action, **params):
         """

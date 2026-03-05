@@ -1,13 +1,15 @@
 #!/bin/bash
 #
-# Update Fresh Install with Latest Code from GitHub
-# Run this on fresh install servers to get the admin helper service
+# Update Time Tracker from Git Repository
+#
+# This script updates an existing installation with the latest code from git
+# Use this after pulling the latest changes from the repository
 #
 
 set -e
 
 echo "========================================================================"
-echo "Time Tracker - Update from GitHub"
+echo "Time Tracker - Update from Git Repository"
 echo "========================================================================"
 echo ""
 
@@ -17,50 +19,78 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# Check if git repo exists
-if [ ! -d ~/timetracker/.git ]; then
-    echo "ERROR: Git repository not found at ~/timetracker"
-    echo "Please clone first: git clone https://github.com/mcganng/timetracker.git"
+INSTALL_DIR="/opt/timetracker"
+
+# Check if timetracker is installed
+if [ ! -d "$INSTALL_DIR" ]; then
+    echo "ERROR: Time Tracker does not appear to be installed at $INSTALL_DIR"
     exit 1
 fi
 
-echo "[1/5] Pulling latest code from GitHub..."
-cd ~/timetracker
-git pull origin main
-echo "  ✓ Code updated"
+cd "$INSTALL_DIR"
+
+echo "[1/6] Updating admin helper service..."
+if [ -f "$INSTALL_DIR/timetracker-admin-helper.py" ]; then
+    cp "$INSTALL_DIR/timetracker-admin-helper.py" /usr/local/bin/timetracker-admin-helper
+    chmod +x /usr/local/bin/timetracker-admin-helper
+    echo "  ✓ Admin helper service updated"
+else
+    echo "  ⚠ Warning: timetracker-admin-helper.py not found"
+fi
 
 echo ""
-echo "[2/5] Copying new files to /opt/timetracker..."
-cp -v admin_helper_client.py /opt/timetracker/
-cp -v timetracker-admin-helper.py /opt/timetracker/
-cp -v timetracker-admin-helper.service /opt/timetracker/
-cp -v install_admin_helper.sh /opt/timetracker/
-cp -v app.py /opt/timetracker/
-echo "  ✓ Files copied"
+echo "[2/6] Updating admin helper client..."
+if [ -f "$INSTALL_DIR/admin_helper_client.py" ]; then
+    # File should already be in place from git pull
+    echo "  ✓ Admin helper client is up to date"
+else
+    echo "  ⚠ Warning: admin_helper_client.py not found"
+fi
 
 echo ""
-echo "[3/5] Setting correct ownership..."
-chown timetracker:timetracker /opt/timetracker/*.py
-chown timetracker:timetracker /opt/timetracker/*.sh
-chmod +x /opt/timetracker/*.sh
-echo "  ✓ Ownership set"
+echo "[3/6] Updating systemd service files..."
+if [ -f "$INSTALL_DIR/timetracker-admin-helper.service" ]; then
+    cp "$INSTALL_DIR/timetracker-admin-helper.service" /etc/systemd/system/
+    chmod 644 /etc/systemd/system/timetracker-admin-helper.service
+    systemctl daemon-reload
+    echo "  ✓ Systemd service files updated"
+else
+    echo "  ⚠ Warning: timetracker-admin-helper.service not found"
+fi
 
 echo ""
-echo "[4/5] Installing admin helper service..."
-cd /opt/timetracker
-bash install_admin_helper.sh
-echo "  ✓ Admin helper installed"
+echo "[4/6] Restarting admin helper service..."
+systemctl restart timetracker-admin-helper
+sleep 2
+if systemctl is-active --quiet timetracker-admin-helper; then
+    echo "  ✓ Admin helper service restarted successfully"
+else
+    echo "  ✗ ERROR: Admin helper service failed to start"
+    echo ""
+    echo "Check logs: sudo journalctl -u timetracker-admin-helper -n 50"
+    exit 1
+fi
 
 echo ""
-echo "[5/5] Restarting timetracker service..."
+echo "[5/6] Restarting timetracker service..."
 systemctl restart timetracker
 sleep 2
-
 if systemctl is-active --quiet timetracker; then
-    echo "  ✓ Timetracker service restarted"
+    echo "  ✓ Timetracker service restarted successfully"
 else
-    echo "  ✗ WARNING: Timetracker service may have issues"
-    systemctl status timetracker --no-pager -l
+    echo "  ✗ ERROR: Timetracker service failed to start"
+    echo ""
+    echo "Check logs: sudo journalctl -u timetracker -n 50"
+    exit 1
+fi
+
+echo ""
+echo "[6/6] Verifying queue directories..."
+if [ -d "/var/run/timetracker/requests" ] && [ -d "/var/run/timetracker/responses" ]; then
+    echo "  ✓ Queue directories exist at /var/run/timetracker/"
+    ls -ld /var/run/timetracker/requests /var/run/timetracker/responses
+else
+    echo "  ⚠ Warning: Queue directories not found - service may need more time to start"
 fi
 
 echo ""
@@ -68,18 +98,18 @@ echo "========================================================================"
 echo "✓ Update Complete!"
 echo "========================================================================"
 echo ""
-echo "The timetracker application has been updated with:"
-echo "  - Admin helper service for server configuration"
-echo "  - Fixed app.py with dual-mode support"
-echo "  - All latest fixes from GitHub"
+echo "Services updated and restarted:"
+echo "  • timetracker-admin-helper (for timezone and network config)"
+echo "  • timetracker (main application)"
 echo ""
-echo "Test the server configuration:"
-echo "  1. Open browser to: http://$(hostname -I | awk '{print $1}')"
-echo "  2. Login as admin"
-echo "  3. Go to: Admin → Server Configuration"
-echo "  4. Try setting timezone and NTP servers"
+echo "Test the server configuration features:"
+echo "  1. Log in as admin"
+echo "  2. Go to: Admin → Server Configuration"
+echo "  3. Try changing timezone"
+echo "  4. Try modifying network settings"
+echo "  5. Try updating NTP servers"
 echo ""
-echo "Services running:"
-systemctl is-active --quiet timetracker-admin-helper && echo "  ✓ Admin helper service: Running" || echo "  ✗ Admin helper service: Not running"
-systemctl is-active --quiet timetracker && echo "  ✓ Timetracker service: Running" || echo "  ✗ Timetracker service: Not running"
+echo "Monitor logs if issues occur:"
+echo "  sudo journalctl -u timetracker-admin-helper -f"
+echo "  sudo journalctl -u timetracker -f"
 echo ""

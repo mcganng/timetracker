@@ -31,12 +31,8 @@ chmod 644 /etc/systemd/system/timetracker-admin-helper.service
 echo "  ✓ Service file installed"
 
 echo ""
-echo "[3/7] Creating queue directories..."
-mkdir -p /opt/timetracker/queue/requests
-mkdir -p /opt/timetracker/queue/responses
-chown -R timetracker:timetracker /opt/timetracker/queue
-chmod -R 770 /opt/timetracker/queue
-echo "  ✓ Queue directories created"
+echo "[3/7] Queue directories will be created by the service..."
+echo "  ✓ The admin helper service creates /var/run/timetracker/ at startup"
 
 echo ""
 echo "[4/7] Reloading systemd..."
