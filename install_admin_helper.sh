@@ -32,10 +32,10 @@ echo "  ✓ Service file installed"
 
 echo ""
 echo "[3/7] Creating queue directories..."
-mkdir -p /var/run/timetracker/requests
-mkdir -p /var/run/timetracker/responses
-chown -R timetracker:timetracker /var/run/timetracker
-chmod -R 770 /var/run/timetracker
+mkdir -p /opt/timetracker/queue/requests
+mkdir -p /opt/timetracker/queue/responses
+chown -R timetracker:timetracker /opt/timetracker/queue
+chmod -R 770 /opt/timetracker/queue
 echo "  ✓ Queue directories created"
 
 echo ""

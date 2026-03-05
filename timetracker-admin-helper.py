@@ -27,8 +27,8 @@ from pathlib import Path
 from datetime import datetime
 
 # Configuration
-QUEUE_DIR = Path("/var/run/timetracker/requests")
-RESPONSE_DIR = Path("/var/run/timetracker/responses")
+QUEUE_DIR = Path("/opt/timetracker/queue/requests")
+RESPONSE_DIR = Path("/opt/timetracker/queue/responses")
 LOG_FILE = "/var/log/timetracker-admin-helper.log"
 
 # Set up logging
