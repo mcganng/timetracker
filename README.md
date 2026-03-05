@@ -26,7 +26,11 @@ cd timetracker
 # 2. Run automated installation
 sudo ./install.sh
 
-# 3. Access application
+# 3. Fix server configuration (REQUIRED for fresh installs)
+cd /opt/timetracker
+sudo bash fix_server_config.sh
+
+# 4. Access application
 # Open browser to: http://your-server-ip
 ```
 
@@ -36,6 +40,8 @@ The installation script will:
 - Configure application and web server
 - Set up automated daily backups
 - Configure firewall
+
+**Important:** Step 3 is required to enable timezone and NTP configuration features. See [QUICK_FIX.md](QUICK_FIX.md) for details.
 
 ## 📦 What's Included
 

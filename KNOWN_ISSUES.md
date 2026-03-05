@@ -2,6 +2,17 @@
 
 This document tracks known issues discovered during fresh installations and their solutions.
 
+## 🔥 QUICK FIX for Fresh Installs
+
+**If you just installed from GitHub and Server Configuration isn't working:**
+
+```bash
+cd /opt/timetracker
+sudo bash fix_server_config.sh
+```
+
+See [QUICK_FIX.md](QUICK_FIX.md) or Issue #3 below for details.
+
 ## Fixed Issues
 
 ### 1. Missing PyYAML Dependency ✅ FIXED
@@ -53,10 +64,13 @@ Error loading users: column "hire_date" does not exist
 
 **Quick Fix:**
 
-Run the automated fix script:
+Run the automated fix script (make sure you're in the correct directory):
 ```bash
-sudo /opt/timetracker/fix_server_config.sh
+cd /opt/timetracker
+sudo bash fix_server_config.sh
 ```
+
+**Note:** Use `bash` instead of just the path to ensure the script runs correctly.
 
 This script will:
 - Create `/etc/sudoers.d/timetracker` with proper permissions
@@ -108,8 +122,8 @@ sudo -u timetracker sudo -l
 
 Run the diagnostic script:
 ```bash
-chmod +x /opt/timetracker/test_sudo_permissions.sh
-sudo /opt/timetracker/test_sudo_permissions.sh
+cd /opt/timetracker
+sudo bash test_sudo_permissions.sh
 ```
 
 Or test manually:
