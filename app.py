@@ -18,7 +18,7 @@ import io
 import re
 import shlex
 
-app = Flask(__name__, template_folder='templates_git')
+app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'change-this-secret-key-in-production')
 CORS(app)
 
