@@ -92,6 +92,14 @@ done
 [ -f "$SCRIPT_DIR/test_api.py" ] && cp "$SCRIPT_DIR/test_api.py" /opt/timetracker/
 [ -f "$SCRIPT_DIR/test_ui.py" ] && cp "$SCRIPT_DIR/test_ui.py" /opt/timetracker/
 
+# Copy admin helper files
+echo "   Copying admin helper files..."
+[ -f "$SCRIPT_DIR/admin_helper_client.py" ] && cp "$SCRIPT_DIR/admin_helper_client.py" /opt/timetracker/
+[ -f "$SCRIPT_DIR/timetracker-admin-helper.py" ] && cp "$SCRIPT_DIR/timetracker-admin-helper.py" /opt/timetracker/
+[ -f "$SCRIPT_DIR/timetracker-admin-helper.service" ] && cp "$SCRIPT_DIR/timetracker-admin-helper.service" /opt/timetracker/
+[ -f "$SCRIPT_DIR/install_admin_helper.sh" ] && cp "$SCRIPT_DIR/install_admin_helper.sh" /opt/timetracker/
+[ -f "$SCRIPT_DIR/update_from_git.sh" ] && cp "$SCRIPT_DIR/update_from_git.sh" /opt/timetracker/
+
 # Copy static files
 if [ -d "$SCRIPT_DIR/static" ]; then
     echo "   Copying static files..."
