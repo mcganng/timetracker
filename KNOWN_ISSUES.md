@@ -28,11 +28,21 @@ Error loading users: column "hire_date" does not exist
 ### 3. Server Configuration - Timezone/NTP Updates ⚠️ CRITICAL
 **Problem:** Server Configuration page cannot update timezone or NTP servers on fresh git installs
 
-**Symptoms:**
-```
-sudo: The "no new privileges" flag is set, which prevents sudo from running as root.
-sudo: If sudo is running in a container, you may need to adjust the container configuration to disable the flag.
-```
+**Error Messages You'll See:**
+
+1. **When setting timezone:**
+   ```
+   Error: Command '['/usr/bin/sudo', '/usr/bin/timedatectl', 'set-timezone', 'America/Chicago']'
+   returned non-zero exit status 1.
+   ```
+
+2. **When setting NTP server:**
+   ```
+   Error: Failed to set NTP servers: sudo: The "no new privileges" flag is set, which prevents
+   sudo from running as root.
+   sudo: If sudo is running in a container, you may need to adjust the container configuration
+   to disable the flag.
+   ```
 
 **Root Causes:**
 1. **Typo in systemd service file:** Line 18 has `NoNewPrivileges=fasle` (should be `false`)
@@ -51,7 +61,10 @@ sudo /opt/timetracker/fix_server_config.sh
 This script will:
 - Create `/etc/sudoers.d/timetracker` with proper permissions
 - Fix the `NoNewPrivileges` typo in the systemd service file
-- Reload systemd and restart the service
+- **Properly stop and restart** the service to apply the changes
+- Verify the security settings are applied correctly
+
+**IMPORTANT:** The service MUST be fully restarted (not just reloaded) for the `NoNewPrivileges=false` setting to take effect. The fix script handles this automatically.
 
 **Manual Fix (if needed):**
 
@@ -71,18 +84,35 @@ EOF
 sudo chmod 0440 /etc/sudoers.d/timetracker
 ```
 
-3. Reload and restart:
+3. Reload and **fully restart** the service:
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl restart timetracker
+sudo systemctl stop timetracker
+sudo systemctl start timetracker
 ```
 
-4. Verify permissions:
+**Note:** You MUST stop and start (not just `restart`) to ensure the NoNewPrivileges setting takes effect.
+
+4. Verify the setting is applied:
+```bash
+systemctl show timetracker | grep NoNewPrivileges
+# Should show: NoNewPrivileges=no (yes=blocked, no=allowed)
+```
+
+5. Verify sudo permissions:
 ```bash
 sudo -u timetracker sudo -l
 ```
 
 **Testing:**
+
+Run the diagnostic script:
+```bash
+chmod +x /opt/timetracker/test_sudo_permissions.sh
+sudo /opt/timetracker/test_sudo_permissions.sh
+```
+
+Or test manually:
 ```bash
 # Test timezone command
 sudo -u timetracker sudo /usr/bin/timedatectl list-timezones | head -5
@@ -91,7 +121,15 @@ sudo -u timetracker sudo /usr/bin/timedatectl list-timezones | head -5
 echo 'time.google.com' | sudo -u timetracker sudo /usr/local/bin/update-ntp-config
 ```
 
-**Status:** Fixed by running `fix_server_config.sh` after installation
+**Common Issues After Fix:**
+
+If you still get "no new privileges" errors after running the fix script:
+1. Verify the service was **fully restarted** (stop then start, not just restart)
+2. Check the NoNewPrivileges setting: `systemctl show timetracker | grep NoNewPrivileges`
+3. It should show `NoNewPrivileges=no` (not `yes`)
+4. If it shows `yes`, the service wasn't restarted properly - run the fix script again
+
+**Status:** Fixed by running `fix_server_config.sh` after installation (updated version ensures proper restart)
 
 **Reference:** See [SERVER_CONFIG_SETUP.md](SERVER_CONFIG_SETUP.md) for detailed documentation
 

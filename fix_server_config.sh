@@ -61,14 +61,32 @@ fi
 
 echo "[4/4] Reloading systemd and restarting service..."
 systemctl daemon-reload
-systemctl restart timetracker
+echo "   ✓ Systemd daemon reloaded"
 
-# Wait a moment for service to start
-sleep 2
+# Stop the service first to ensure clean restart
+systemctl stop timetracker
+sleep 1
+
+# Start the service
+systemctl start timetracker
+
+# Wait for service to fully start
+sleep 3
 
 # Check if service is running
 if systemctl is-active --quiet timetracker; then
     echo "   ✓ Time Tracker service restarted successfully"
+
+    # Verify the NoNewPrivileges setting is active
+    echo ""
+    echo "[5/5] Verifying service security settings..."
+    if systemctl show timetracker | grep -q "NoNewPrivileges=no"; then
+        echo "   ✓ NoNewPrivileges is correctly set to 'no' (allows sudo)"
+    else
+        echo "   ⚠ WARNING: NoNewPrivileges may not be applied correctly"
+        echo "   Current value:"
+        systemctl show timetracker | grep "NoNewPrivileges" | sed 's/^/     /'
+    fi
 else
     echo "   ✗ ERROR: Time Tracker service failed to start!"
     echo ""
@@ -81,19 +99,25 @@ echo "==================================================================="
 echo "✓ Server Configuration Fix Complete!"
 echo "==================================================================="
 echo ""
-echo "Verification:"
+echo "IMPORTANT: The application has been restarted with new settings."
 echo ""
-echo "1. Check timetracker sudo permissions:"
-echo "   sudo -u timetracker sudo -l"
+echo "Next Steps:"
 echo ""
-echo "2. Test timezone command:"
-echo "   sudo -u timetracker sudo /usr/bin/timedatectl list-timezones | head -5"
+echo "1. Run the test script to verify everything works:"
+echo "   chmod +x /opt/timetracker/test_sudo_permissions.sh"
+echo "   sudo /opt/timetracker/test_sudo_permissions.sh"
 echo ""
-echo "3. Test NTP configuration:"
-echo "   echo 'time.google.com' | sudo -u timetracker sudo /usr/local/bin/update-ntp-config"
+echo "2. If tests pass, access the web interface:"
+echo "   - Log in as admin"
+echo "   - Go to: Admin → Server Configuration"
+echo "   - Try changing timezone (e.g., to America/Chicago)"
+echo "   - Try updating NTP servers (e.g., time.google.com)"
 echo ""
-echo "4. Access the web interface and try:"
-echo "   - Admin → Server Configuration"
-echo "   - Change timezone"
-echo "   - Update NTP servers"
+echo "3. If you still get errors, check the service status:"
+echo "   sudo systemctl status timetracker"
+echo "   sudo journalctl -u timetracker -n 50 --no-pager"
+echo ""
+echo "4. Verify NoNewPrivileges is set correctly:"
+echo "   systemctl show timetracker | grep NoNewPrivileges"
+echo "   (Should show: NoNewPrivileges=no)"
 echo ""
