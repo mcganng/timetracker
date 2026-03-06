@@ -48,6 +48,7 @@ app.py.backup.*
 *.pid
 ntp-backups/
 netplan-backups/
+queue/
 
 # Claude Code
 .claude/

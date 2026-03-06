@@ -41,7 +41,7 @@ The installation script will:
 - Set up automated daily backups
 - Configure firewall
 
-**Note:** Step 3 is optional but recommended. It enables timezone and NTP configuration in the web UI without sudo conflicts. The app works fine without it. See [SERVER_CONFIG_FIX_FINAL.md](SERVER_CONFIG_FIX_FINAL.md) for details.
+**Note:** Step 3 is optional but recommended. It enables timezone and NTP configuration in the web UI without sudo conflicts. The app works fine without it. See [docs/fixes/SERVER_CONFIG_FIX_FINAL.md](docs/fixes/SERVER_CONFIG_FIX_FINAL.md) for details.
 
 ## 📦 What's Included
 
@@ -75,7 +75,7 @@ timetracker/
 
 ## 🔧 Manual Installation
 
-If you prefer step-by-step installation, see `INSTALLATION_GUIDE.md` for complete instructions.
+If you prefer step-by-step installation, see [docs/INSTALLATION_GUIDE.md](docs/INSTALLATION_GUIDE.md) for complete instructions.
 
 ## 📊 Usage
 
@@ -442,13 +442,38 @@ Access at: `http://localhost:5000`
 - `POST /api/admin/toggle-user-active` - Activate/deactivate user
 - `DELETE /api/admin/delete-user` - Delete user account
 
+## 📚 Documentation
+
+Comprehensive documentation is available in the [docs/](docs/) directory:
+
+### Getting Started
+- [Quick Start Guide](docs/QUICK_START.md) - Fast track to getting the app running
+- [Installation Guide](docs/INSTALLATION_GUIDE.md) - Detailed step-by-step installation
+- [Installation Checklist](docs/INSTALLATION_CHECKLIST.md) - Pre/post-installation checklist
+
+### Configuration & Features
+- [System Documentation](docs/SYSTEM_DOCUMENTATION.md) - Complete system overview
+- [Server Configuration Setup](docs/SERVER_CONFIG_SETUP.md) - Timezone, NTP, and network config
+- [Admin Helper](docs/ADMIN_HELPER.md) - Admin helper service documentation
+- [Admin Color Scheme](docs/ADMIN_COLOR_SCHEME.md) - Admin UI customization
+
+### Maintenance
+- [Backup & Restore Guide](docs/BACKUP_RESTORE.md) - Complete backup/restore procedures
+- [Database Migration](docs/DATABASE_MIGRATION.md) - Database schema migration guide
+- [Known Issues](docs/KNOWN_ISSUES.md) - Common problems and solutions
+
+### Development
+- [Repository Structure](docs/REPOSITORY_STRUCTURE.md) - Codebase organization
+- [docs/fixes/](docs/fixes/) - Historical bug fixes and solutions
+
 ## 🤝 Support
 
 For issues or questions:
 
-1. Check the `INSTALLATION_GUIDE.md` for detailed instructions
-2. Review logs: `sudo journalctl -u timetracker -f`
-3. Check database status: `sudo systemctl status postgresql`
+1. Check the [docs/INSTALLATION_GUIDE.md](docs/INSTALLATION_GUIDE.md) for detailed instructions
+2. Review [docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) for common problems and solutions
+3. Review logs: `sudo journalctl -u timetracker -f`
+4. Check database status: `sudo systemctl status postgresql`
 
 ## 📄 License
 
