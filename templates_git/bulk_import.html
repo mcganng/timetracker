@@ -12,12 +12,20 @@
                     <h5 class="mb-0"><i class="bi bi-clipboard"></i> Paste Your Data</h5>
                 </div>
                 <div class="card-body">
+                    <div class="d-grid gap-2 mb-3">
+                        <button type="button" class="btn btn-success btn-lg" onclick="processImport()">
+                            <i class="bi bi-play-circle"></i> Process Import
+                        </button>
+                    </div>
+
+                    <div id="importResult" class="mb-3"></div>
+
                     <div class="mb-3">
                         <label for="mondayDate" class="form-label">Monday Date (start of week)</label>
                         <input type="date" class="form-control" id="mondayDate" required>
                         <small class="text-muted">Select the Monday of the week you're importing</small>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="pasteArea" class="form-label">Paste Savant Data Here</label>
                         <textarea class="form-control font-monospace" id="pasteArea" rows="15" placeholder="Paste your time data from Savant here...
@@ -26,14 +34,6 @@ Example format:
 200004007    130 - Implementation    8    8    0    4    8    0    0
 PS-UC-2026   410 - Admin            0    1    2    1    0    0    0"></textarea>
                     </div>
-                    
-                    <div class="d-grid gap-2">
-                        <button type="button" class="btn btn-success btn-lg" onclick="processImport()">
-                            <i class="bi bi-play-circle"></i> Process Import
-                        </button>
-                    </div>
-                    
-                    <div id="importResult" class="mt-3"></div>
                 </div>
             </div>
         </div>
