@@ -302,6 +302,102 @@ The dashboard provides real-time metrics, charts, and project tracking for the s
 - Admin utilization % trend
 - Powered by Chart.js
 
+### Understanding Utilization Calculations
+
+The dashboard uses **two different utilization calculation methods** for different purposes. Understanding the difference is important for interpreting your metrics correctly.
+
+#### Method 1: Dashboard Metric Cards (Capacity-Based)
+
+**Used in:** Project Hours and Admin Hours metric cards
+
+**Formula:**
+```
+Project Utilization % = (Project Hours / Available Hours) × 100
+Admin Utilization % = (Admin Hours / Available Hours) × 100
+
+Where:
+  Available Hours = (Number of Weeks in Date Range) × 40 hours/week
+```
+
+**Purpose:** Measures how much of your **available work capacity** you used for billable vs non-billable work.
+
+**Example:**
+- Date range: 2 weeks (14 days)
+- Available hours: 2 weeks × 40 = 80 hours
+- Logged: 50 hours Project, 10 hours Admin
+- **Project Utilization: (50 / 80) × 100 = 62.5%**
+- **Admin Utilization: (10 / 80) × 100 = 12.5%**
+
+**Key Characteristic:** These percentages typically **do not add up to 100%** because they're measured against your total available time (which may include unlogged hours, PTO, etc.).
+
+#### Method 2: Historical Utilization Chart (Proportion-Based)
+
+**Used in:** Historical Utilization Over Time chart (past 12 weeks)
+
+**Formula:**
+```
+Project Utilization % = (Project Hours / Total Logged Hours) × 100
+Admin Utilization % = (Admin Hours / Total Logged Hours) × 100
+
+Where:
+  Total Logged Hours = Project Hours + Admin Hours + PTO Hours
+```
+
+**Purpose:** Shows the **proportion** of your actual logged time that was billable vs non-billable work.
+
+**Example:**
+- Week of 02/17: Logged 50 hours Project, 10 hours Admin
+- Total logged: 60 hours
+- **Project Utilization: (50 / 60) × 100 = 83.3%**
+- **Admin Utilization: (10 / 60) × 100 = 16.7%**
+
+**Key Characteristic:** Project % + Admin % will often **add up close to 100%** (assuming minimal PTO that week), because you're dividing by actual logged time.
+
+#### Why Two Different Methods?
+
+| Metric Cards (Capacity-Based) | Historical Chart (Proportion-Based) |
+|-------------------------------|-------------------------------------|
+| Answers: "How much of my available time did I use?" | Answers: "Of the time I worked, how much was billable?" |
+| Shows absolute productivity | Shows work composition |
+| Includes impact of time off, unlogged hours | Only considers logged work |
+| Better for capacity planning | Better for billing analysis |
+| Can be low if you took PTO or didn't log all hours | Always accounts for 100% of logged time |
+
+#### Practical Example Comparing Both Methods
+
+**Scenario:** You worked 2 weeks and logged the following:
+- Project work: 60 hours
+- Admin work: 15 hours
+- PTO: 5 hours
+- **Total logged: 80 hours**
+
+**Dashboard Metric Cards show:**
+- Available: 2 weeks × 40 = 80 hours
+- Project Utilization: (60 / 80) × 100 = **75%**
+- Admin Utilization: (15 / 80) × 100 = **18.75%**
+
+**Historical Chart shows:**
+- Total logged: 80 hours
+- Project Utilization: (60 / 80) × 100 = **75%**
+- Admin Utilization: (15 / 80) × 100 = **18.75%**
+
+*In this case they match because you logged exactly 80 hours!*
+
+**But if you only logged 60 hours total (Project: 50, Admin: 10):**
+
+**Dashboard Metric Cards:**
+- Project Utilization: (50 / 80) × 100 = **62.5%** ← vs. available time
+- Admin Utilization: (10 / 80) × 100 = **12.5%** ← vs. available time
+
+**Historical Chart:**
+- Project Utilization: (50 / 60) × 100 = **83.3%** ← of logged time
+- Admin Utilization: (10 / 60) × 100 = **16.7%** ← of logged time
+
+**Interpretation:**
+- You used 62.5% of your available capacity on projects (dashboard)
+- But 83.3% of your actual work time was billable (chart)
+- This indicates you either took time off or didn't log 20 hours
+
 ### Routes
 
 ```python
