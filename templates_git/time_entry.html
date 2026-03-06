@@ -249,10 +249,6 @@
                         <option value="Holiday">Holiday</option>
                     </select>
                 </div>
-                <div class="mb-3">
-                    <label for="editDescription" class="form-label">Job Description</label>
-                    <input type="text" class="form-control" id="editDescription">
-                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -439,7 +435,6 @@ function editEntry(id) {
     document.getElementById('editJobType').value        = entry.job_type || 'Job';
     document.getElementById('editHours').value          = entry.hours || 0;
     document.getElementById('editCategory').value       = entry.category || 'Project';
-    document.getElementById('editDescription').value    = entry.job_description || '';
 
     new bootstrap.Modal(document.getElementById('editModal')).show();
 }
@@ -456,7 +451,7 @@ async function saveEdit() {
         hours:              parseFloat(document.getElementById('editHours').value),
         category:           document.getElementById('editCategory').value,
         description:        entry ? entry.description : '',
-        job_description:    document.getElementById('editDescription').value,
+        job_description:    entry ? entry.job_description : '',
         customer_name:      entry ? entry.customer_name : '',
         person_responsible: entry ? entry.person_responsible : ''
     };
