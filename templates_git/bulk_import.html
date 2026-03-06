@@ -39,32 +39,39 @@ PS-UC-2026   410 - Admin            0    1    2    1    0    0    0"></textarea>
         </div>
         
         <div class="col-md-4">
-            <div class="card bg-light">
+            <div class="card bg-light" style="position: sticky; top: 20px;">
                 <div class="card-header">
                     <h6 class="mb-0"><i class="bi bi-info-circle"></i> How to Use</h6>
                 </div>
-                <div class="card-body">
-                    <ol>
-                        <li>LOG INTO SAVANT:</li>
-                        <li>Click on your TE Section</li>
-                        <li>On a row with the status of Historical click on the Pencil to the right</li>
-                        <li>Under the Type column click on the first cell in the row this could be "Job" or "Absence" and a blue highlight box will show</li>
-                        <li>Once that cell is highlighted press 'Ctrl' and 'A' to hightlight all cells</li>
-                        <li>Once all cells are highlighted press 'Crtl' and 'C' to copy</li>
-                    </ol>
-                    
+                <div class="card-body" style="max-height: 70vh; overflow-y: auto;">
+                    <h6><i class="bi bi-file-earmark-text"></i> Required Format in Savant</h6>
+                    <p class="small"><strong>Headers (must be in this exact order):</strong></p>
+                    <div class="small font-monospace bg-white p-2 mb-3 border rounded" style="overflow-x: auto; white-space: nowrap;">
+                        Type | Job Number | Job Task No | Description | Monday | Tuesday | Wednesday | Thursday | Friday | Saturday | Sunday | Reason | Approved/Rejected | Person Responsible | Manager | Job Description | Customer Name | Total Hours | Status
+                    </div>
+
                     <hr>
-                    <ol>
-                      <li>LOG INTO TIME TRACKER:</li>
-                      <ul>A) If there is a new project:</ul>
-                      <ul><ul>Click on the Projects Tab and add all your project informaiton first</ul></ul>
-                      <p></p>
-                      <li>If existing projects or finished adding new projects:</li>
-                      <li>Click on the Bulk Import Tab</li>
-                      <li>Set your Monday Date according to the date in Savant</li>
-                      <li>Paste your information from Savant in the lower box</li>
-                      <li>Click Process Import</li>
-                    </ol>  
+
+                    <h6><i class="bi bi-box-arrow-in-down"></i> From SAVANT:</h6>
+                    <ol class="small">
+                        <li>Log into Savant</li>
+                        <li>Click on your TE Section</li>
+                        <li>On a row with status "Historical", click the Pencil</li>
+                        <li>Under the Type column, click the first cell (Job or Absence)</li>
+                        <li>Press <kbd>Ctrl+A</kbd> to highlight all cells</li>
+                        <li>Press <kbd>Ctrl+C</kbd> to copy</li>
+                    </ol>
+
+                    <hr>
+
+                    <h6><i class="bi bi-box-arrow-in-up"></i> To TIME TRACKER:</h6>
+                    <ol class="small">
+                      <li>If new project exists: Add it in Projects tab first</li>
+                      <li>Click Bulk Import tab</li>
+                      <li>Set Monday Date to match Savant week</li>
+                      <li>Paste copied data in the text box</li>
+                      <li>Click "Process Import"</li>
+                    </ol>
                     <hr>
                     
                     <h6><i class="bi bi-check-circle"></i> Auto-Detection</h6>
