@@ -250,7 +250,7 @@
                     </select>
                 </div>
                 <div class="mb-3">
-                    <label for="editDescription" class="form-label">Description</label>
+                    <label for="editDescription" class="form-label">Job Description</label>
                     <input type="text" class="form-control" id="editDescription">
                 </div>
             </div>
@@ -439,21 +439,26 @@ function editEntry(id) {
     document.getElementById('editJobType').value        = entry.job_type || 'Job';
     document.getElementById('editHours').value          = entry.hours || 0;
     document.getElementById('editCategory').value       = entry.category || 'Project';
-    document.getElementById('editDescription').value    = entry.description || '';
+    document.getElementById('editDescription').value    = entry.job_description || '';
 
     new bootstrap.Modal(document.getElementById('editModal')).show();
 }
 
 async function saveEdit() {
     const id = document.getElementById('editEntryId').value;
+    const entry = entriesData.find(e => e.id === parseInt(id));
+
     const data = {
-        entry_date:      document.getElementById('editDate').value,
-        job_number:      document.getElementById('editJobNumber').value,
-        job_task_code:   document.getElementById('editTaskCode').value,
-        job_type:        document.getElementById('editJobType').value,
-        hours:           parseFloat(document.getElementById('editHours').value),
-        category:        document.getElementById('editCategory').value,
-        description:     document.getElementById('editDescription').value
+        entry_date:         document.getElementById('editDate').value,
+        job_number:         document.getElementById('editJobNumber').value,
+        job_task_code:      document.getElementById('editTaskCode').value,
+        job_type:           document.getElementById('editJobType').value,
+        hours:              parseFloat(document.getElementById('editHours').value),
+        category:           document.getElementById('editCategory').value,
+        description:        entry ? entry.description : '',
+        job_description:    document.getElementById('editDescription').value,
+        customer_name:      entry ? entry.customer_name : '',
+        person_responsible: entry ? entry.person_responsible : ''
     };
 
     try {
