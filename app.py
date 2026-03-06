@@ -103,11 +103,12 @@ def login():
             cur.close()
             conn.close()
             return jsonify({'error': 'Account has been deactivated. Contact administrator.'}), 403
-        
+
         session['user_id'] = user['id']
         session['username'] = user['username']
         session['full_name'] = user['full_name']
         session['role'] = user.get('role', 'user')
+        session['theme'] = user.get('theme', 'light')  # Default to light theme
         
         # Update last login
         cur.execute('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = %s', (user['id'],))
@@ -2018,6 +2019,42 @@ def user_change_password():
     except Exception as e:
         print(f"[PASSWORD] Error: {str(e)}", file=sys.stderr)
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/user/theme', methods=['POST'])
+@login_required
+def update_user_theme():
+    """Update user's theme preference"""
+    try:
+        data = request.json
+        theme = data.get('theme')
+        user_id = session.get('user_id')
+
+        # Validate theme value
+        if theme not in ['light', 'dark']:
+            return jsonify({'error': 'Invalid theme value'}), 400
+
+        conn = get_db_connection()
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+        # Update user's theme preference
+        cur.execute('''
+            UPDATE users
+            SET theme = %s
+            WHERE id = %s
+        ''', (theme, user_id))
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        # Update session
+        session['theme'] = theme
+
+        return jsonify({'success': True, 'theme': theme})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/admin/read-file', methods=['POST'])
 @login_required
 @admin_required

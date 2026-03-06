@@ -6,11 +6,49 @@
     --warning-color: #ffc107;
     --danger-color: #dc3545;
     --info-color: #0dcaf0;
+
+    /* Light theme (default) */
+    --bg-color: #f8f9fa;
+    --body-bg: #ffffff;
+    --text-color: #212529;
+    --text-muted: #6c757d;
+    --border-color: #dee2e6;
+    --card-bg: #ffffff;
+    --card-header-bg: #ffffff;
+    --table-bg: #ffffff;
+    --table-hover-bg: #f8f9fa;
+    --navbar-bg: #0d6efd;
+    --navbar-text: #ffffff;
+    --input-bg: #ffffff;
+    --input-border: #ced4da;
+    --dropdown-bg: #ffffff;
+    --dropdown-hover-bg: #e9ecef;
+}
+
+/* Dark theme */
+body.dark-theme {
+    --bg-color: #1a1d20;
+    --body-bg: #2b3035;
+    --text-color: #e9ecef;
+    --text-muted: #adb5bd;
+    --border-color: #495057;
+    --card-bg: #2b3035;
+    --card-header-bg: #343a40;
+    --table-bg: #2b3035;
+    --table-hover-bg: #343a40;
+    --navbar-bg: #1a1d20;
+    --navbar-text: #e9ecef;
+    --input-bg: #343a40;
+    --input-border: #495057;
+    --dropdown-bg: #2b3035;
+    --dropdown-hover-bg: #343a40;
 }
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: #f8f9fa;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .navbar-brand {
@@ -19,22 +57,40 @@ body {
 }
 
 .card {
-    border: none;
+    border: 1px solid var(--border-color);
+    background-color: var(--card-bg);
     box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
     margin-bottom: 1.5rem;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .card-header {
-    background-color: #fff;
-    border-bottom: 2px solid #e9ecef;
+    background-color: var(--card-header-bg);
+    border-bottom: 2px solid var(--border-color);
     font-weight: 600;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.table {
+    color: var(--text-color);
+    background-color: var(--table-bg);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .table th {
     font-weight: 600;
     text-transform: uppercase;
     font-size: 0.875rem;
-    color: #6c757d;
+    color: var(--text-muted);
+    transition: color 0.3s ease;
+}
+
+.table-hover tbody tr:hover {
+    background-color: var(--table-hover-bg);
+}
+
+.table-striped tbody tr:nth-of-type(odd) {
+    background-color: var(--table-hover-bg);
 }
 
 .btn {
@@ -69,11 +125,46 @@ body {
 .form-label {
     font-weight: 500;
     margin-bottom: 0.5rem;
+    color: var(--text-color);
 }
 
-.form-control:focus {
+.form-control, .form-select {
+    background-color: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    background-color: var(--input-bg);
     border-color: var(--primary-color);
+    color: var(--text-color);
     box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.form-control::placeholder {
+    color: var(--text-muted);
+}
+
+/* Dropdown menus */
+.dropdown-menu {
+    background-color: var(--dropdown-bg);
+    border-color: var(--border-color);
+    transition: background-color 0.3s ease;
+}
+
+.dropdown-item {
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dropdown-item:hover {
+    background-color: var(--dropdown-hover-bg);
+    color: var(--text-color);
+}
+
+.dropdown-divider {
+    border-color: var(--border-color);
 }
 
 /* Loading spinner */
@@ -98,8 +189,34 @@ body {
 .table-responsive thead th {
     position: sticky;
     top: 0;
-    background-color: #fff;
+    background-color: var(--table-bg);
     z-index: 10;
+}
+
+/* Navbar dark theme support */
+body.dark-theme .navbar {
+    background-color: var(--navbar-bg) !important;
+}
+
+body.dark-theme .navbar-brand,
+body.dark-theme .nav-link,
+body.dark-theme .navbar-toggler-icon {
+    color: var(--navbar-text) !important;
+}
+
+/* Modal dark theme support */
+body.dark-theme .modal-content {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+body.dark-theme .modal-header,
+body.dark-theme .modal-footer {
+    border-color: var(--border-color);
+}
+
+body.dark-theme .close {
+    color: var(--text-color);
 }
 
 /* Mobile responsiveness */
