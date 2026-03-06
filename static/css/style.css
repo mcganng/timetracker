@@ -470,3 +470,106 @@ body.dark-theme hr {
     border-color: var(--border-color);
     opacity: 0.3;
 }
+
+/* Fix button text visibility in dark theme */
+body.dark-theme .btn-light,
+body.dark-theme .btn-outline-light,
+body.dark-theme .btn-secondary,
+body.dark-theme .btn-outline-secondary {
+    color: #212529 !important;
+    background-color: #f8f9fa !important;
+    border-color: #f8f9fa !important;
+}
+
+body.dark-theme .btn-light:hover,
+body.dark-theme .btn-outline-light:hover,
+body.dark-theme .btn-secondary:hover,
+body.dark-theme .btn-outline-secondary:hover {
+    color: #212529 !important;
+    background-color: #e2e6ea !important;
+    border-color: #dae0e5 !important;
+}
+
+body.dark-theme .btn-light:active,
+body.dark-theme .btn-light:focus,
+body.dark-theme .btn-secondary:active,
+body.dark-theme .btn-secondary:focus {
+    color: #212529 !important;
+    background-color: #dae0e5 !important;
+    border-color: #d3d9df !important;
+}
+
+/* Fix icons inside light buttons to match text color */
+body.dark-theme .btn-light i,
+body.dark-theme .btn-light .bi,
+body.dark-theme .btn-outline-light i,
+body.dark-theme .btn-outline-light .bi,
+body.dark-theme .btn-secondary i,
+body.dark-theme .btn-secondary .bi,
+body.dark-theme .btn-outline-secondary i,
+body.dark-theme .btn-outline-secondary .bi {
+    color: #212529 !important;
+}
+
+/* Ensure primary, success, danger, warning, info buttons have proper contrast */
+body.dark-theme .btn-primary,
+body.dark-theme .btn-success,
+body.dark-theme .btn-danger,
+body.dark-theme .btn-warning,
+body.dark-theme .btn-info {
+    color: #ffffff;
+}
+
+body.dark-theme .btn-primary:hover,
+body.dark-theme .btn-success:hover,
+body.dark-theme .btn-danger:hover,
+body.dark-theme .btn-warning:hover,
+body.dark-theme .btn-info:hover {
+    color: #ffffff;
+}
+
+/* Fix outline buttons */
+body.dark-theme .btn-outline-primary,
+body.dark-theme .btn-outline-success,
+body.dark-theme .btn-outline-danger,
+body.dark-theme .btn-outline-warning,
+body.dark-theme .btn-outline-info {
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+
+body.dark-theme .btn-outline-primary:hover {
+    color: #ffffff;
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+body.dark-theme .btn-outline-success:hover {
+    color: #ffffff;
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+body.dark-theme .btn-outline-danger:hover {
+    color: #ffffff;
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+body.dark-theme .btn-outline-warning:hover {
+    color: #212529;
+    background-color: var(--warning-color);
+    border-color: var(--warning-color);
+}
+
+body.dark-theme .btn-outline-info:hover {
+    color: #212529;
+    background-color: var(--info-color);
+    border-color: var(--info-color);
+}
+
+/* Fix disabled buttons */
+body.dark-theme .btn:disabled,
+body.dark-theme .btn.disabled {
+    opacity: 0.5;
+}
