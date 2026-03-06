@@ -45,6 +45,18 @@ logger = logging.getLogger(__name__)
 
 def setup_directories():
     """Create queue and response directories with proper permissions"""
+    # Create parent directory first
+    parent_dir = QUEUE_DIR.parent
+    parent_dir.mkdir(parents=True, exist_ok=True)
+
+    # Set ownership and permissions on parent directory
+    try:
+        os.chmod(parent_dir, 0o770)
+        subprocess.run(['chown', 'timetracker:timetracker', str(parent_dir)], check=True)
+    except (OSError, subprocess.CalledProcessError) as e:
+        logger.error(f"Failed to set permissions on parent directory {parent_dir}: {e}")
+
+    # Create and configure subdirectories
     for directory in [QUEUE_DIR, RESPONSE_DIR]:
         directory.mkdir(parents=True, exist_ok=True)
         # Set permissions: timetracker can write, root can read
