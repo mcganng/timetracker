@@ -114,6 +114,7 @@
             if (themeToggle) {
                 themeToggle.addEventListener('click', function(e) {
                     e.preventDefault();
+                    e.stopPropagation(); // Prevent dropdown from closing
 
                     const currentTheme = document.body.classList.contains('dark-theme') ? 'light' : 'dark';
 
