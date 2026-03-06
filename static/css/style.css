@@ -237,9 +237,236 @@ body.dark-theme .close {
     .card-header button {
         display: none !important;
     }
-    
+
     .card {
         box-shadow: none;
         border: 1px solid #dee2e6;
     }
+}
+
+/* ==========================================
+   DARK THEME COMPREHENSIVE FIXES
+   ========================================== */
+
+/* Fix Bootstrap colored card text (dashboard metrics) */
+body.dark-theme .bg-primary,
+body.dark-theme .bg-success,
+body.dark-theme .bg-warning,
+body.dark-theme .bg-info,
+body.dark-theme .bg-danger {
+    color: #ffffff !important;
+}
+
+body.dark-theme .bg-primary *,
+body.dark-theme .bg-success *,
+body.dark-theme .bg-warning *,
+body.dark-theme .bg-info *,
+body.dark-theme .bg-danger * {
+    color: #ffffff !important;
+}
+
+/* Fix card body text colors */
+body.dark-theme .card-body,
+body.dark-theme .card-text,
+body.dark-theme .card-title {
+    color: var(--text-color);
+}
+
+/* Fix all headings in dark theme */
+body.dark-theme h1,
+body.dark-theme h2,
+body.dark-theme h3,
+body.dark-theme h4,
+body.dark-theme h5,
+body.dark-theme h6 {
+    color: var(--text-color);
+}
+
+/* Fix all paragraphs and text */
+body.dark-theme p,
+body.dark-theme span,
+body.dark-theme div,
+body.dark-theme label,
+body.dark-theme small {
+    color: var(--text-color);
+}
+
+/* Fix table cells */
+body.dark-theme .table td,
+body.dark-theme .table tbody,
+body.dark-theme .table tfoot {
+    color: var(--text-color);
+    background-color: var(--table-bg);
+}
+
+/* Fix table borders */
+body.dark-theme .table,
+body.dark-theme .table th,
+body.dark-theme .table td {
+    border-color: var(--border-color);
+}
+
+/* Fix table striped rows */
+body.dark-theme .table-striped > tbody > tr:nth-of-type(odd) > * {
+    color: var(--text-color);
+    background-color: var(--table-hover-bg);
+}
+
+/* Fix table hover effect */
+body.dark-theme .table-hover > tbody > tr:hover > * {
+    color: var(--text-color);
+    background-color: var(--table-hover-bg);
+}
+
+/* Fix list group items */
+body.dark-theme .list-group-item {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+/* Fix alerts */
+body.dark-theme .alert {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+/* Fix text-muted class */
+body.dark-theme .text-muted {
+    color: var(--text-muted) !important;
+}
+
+/* Fix text-dark class (often used for text that should be visible) */
+body.dark-theme .text-dark {
+    color: var(--text-color) !important;
+}
+
+/* Fix breadcrumb */
+body.dark-theme .breadcrumb {
+    background-color: var(--card-bg);
+}
+
+body.dark-theme .breadcrumb-item,
+body.dark-theme .breadcrumb-item a {
+    color: var(--text-color);
+}
+
+/* Fix pagination */
+body.dark-theme .page-link {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+body.dark-theme .page-link:hover {
+    background-color: var(--table-hover-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+/* Fix progress bars */
+body.dark-theme .progress {
+    background-color: var(--table-hover-bg);
+}
+
+/* Fix accordion */
+body.dark-theme .accordion-item {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+body.dark-theme .accordion-button {
+    background-color: var(--card-header-bg);
+    color: var(--text-color);
+}
+
+body.dark-theme .accordion-button:not(.collapsed) {
+    background-color: var(--table-hover-bg);
+    color: var(--text-color);
+}
+
+body.dark-theme .accordion-body {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+}
+
+/* Fix nav tabs */
+body.dark-theme .nav-tabs {
+    border-color: var(--border-color);
+}
+
+body.dark-theme .nav-tabs .nav-link {
+    color: var(--text-color);
+}
+
+body.dark-theme .nav-tabs .nav-link:hover {
+    border-color: var(--border-color);
+}
+
+body.dark-theme .nav-tabs .nav-link.active {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+/* Fix tooltips */
+body.dark-theme .tooltip-inner {
+    background-color: var(--card-header-bg);
+    color: var(--text-color);
+}
+
+/* Fix popovers */
+body.dark-theme .popover {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+body.dark-theme .popover-header {
+    background-color: var(--card-header-bg);
+    border-color: var(--border-color);
+    color: var(--text-color);
+}
+
+body.dark-theme .popover-body {
+    color: var(--text-color);
+}
+
+/* Fix any remaining white backgrounds */
+body.dark-theme .bg-white {
+    background-color: var(--card-bg) !important;
+}
+
+/* Fix any remaining light backgrounds */
+body.dark-theme .bg-light {
+    background-color: var(--table-hover-bg) !important;
+}
+
+/* Fix strong/bold text */
+body.dark-theme strong,
+body.dark-theme b {
+    color: var(--text-color);
+}
+
+/* Fix links in dark theme */
+body.dark-theme a:not(.nav-link):not(.dropdown-item):not(.btn) {
+    color: #6ea8fe;
+}
+
+body.dark-theme a:not(.nav-link):not(.dropdown-item):not(.btn):hover {
+    color: #9ec5fe;
+}
+
+/* Fix code blocks if any */
+body.dark-theme code,
+body.dark-theme pre {
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    border-color: var(--border-color);
+}
+
+/* Fix horizontal rules */
+body.dark-theme hr {
+    border-color: var(--border-color);
+    opacity: 0.3;
 }
