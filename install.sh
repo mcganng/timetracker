@@ -218,7 +218,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/opt/timetracker
+ReadWritePaths=/opt/timetracker /var/run/timetracker
 
 [Install]
 WantedBy=multi-user.target
