@@ -228,7 +228,8 @@ CREATE TABLE public.users (
     role character varying(20) DEFAULT 'user'::character varying,
     is_active boolean DEFAULT true NOT NULL,
     hire_date date,
-    pto_time numeric(10,2) DEFAULT 0
+    pto_time numeric(10,2) DEFAULT 0,
+    theme character varying(10) DEFAULT 'light'::character varying NOT NULL
 );
 
 
@@ -506,6 +507,14 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: users check_theme_valid; Type: CHECK CONSTRAINT; Schema: public; Owner: timetracker
+--
+
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT check_theme_valid CHECK (theme::text = ANY (ARRAY['light'::character varying, 'dark'::character varying]::text[]));
+
+
+--
 -- Name: idx_project_budgets_status; Type: INDEX; Schema: public; Owner: timetracker
 --
 
@@ -566,6 +575,13 @@ CREATE INDEX idx_users_active ON public.users USING btree (is_active);
 --
 
 CREATE INDEX idx_users_role ON public.users USING btree (role);
+
+
+--
+-- Name: idx_users_theme; Type: INDEX; Schema: public; Owner: timetracker
+--
+
+CREATE INDEX idx_users_theme ON public.users USING btree (theme);
 
 
 --
